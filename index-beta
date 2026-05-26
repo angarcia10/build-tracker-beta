@@ -1,0 +1,2278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build Tracker — Home Construction Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f2ec;
+    --paper: #fbf9f4;
+    --ink: #1a1814;
+    --ink-soft: #4a463d;
+    --ink-muted: #8a8478;
+    --rule: #d9d2c2;
+    --rule-soft: #e8e2d3;
+    --accent: #8b3a1f;
+    --accent-soft: #f0e4dc;
+    --moss: #4a5c3a;
+    --moss-soft: #e3e6d8;
+    --slate: #2c3e50;
+    --slate-soft: #dce4ec;
+    --amber: #b8761a;
+    --amber-soft: #f4e8d0;
+    --rust: #a8421c;
+    --shadow: 0 1px 2px rgba(26, 24, 20, 0.04);
+    --shadow-md: 0 2px 8px rgba(26, 24, 20, 0.06);
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Inter', -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  body { min-height: 100vh; }
+
+  /* ============ LAYOUT ============ */
+  .app { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+
+  /* ============ SIDEBAR ============ */
+  .sidebar {
+    background: var(--paper);
+    border-right: 1px solid var(--rule);
+    padding: 24px 0;
+    position: sticky; top: 0; height: 100vh;
+    display: flex; flex-direction: column;
+  }
+  .brand { padding: 0 24px 28px; border-bottom: 1px solid var(--rule-soft); }
+  .brand-mark {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    font-style: italic;
+  }
+  .brand-mark span { color: var(--accent); }
+  .brand-sub {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-top: 4px;
+  }
+  .nav { padding: 16px 12px; flex: 1; }
+  .nav-section { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-muted); padding: 12px 12px 6px; }
+  .nav-btn {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.12s ease;
+  }
+  .nav-btn:hover { background: var(--rule-soft); }
+  .nav-btn.active { background: var(--ink); color: var(--paper); font-weight: 500; }
+  .nav-btn .nav-icon { width: 16px; opacity: 0.7; }
+  .nav-btn.active .nav-icon { opacity: 1; }
+  .sidebar-footer { padding: 16px 24px; border-top: 1px solid var(--rule-soft); font-size: 11px; color: var(--ink-muted); }
+  .sidebar-footer button {
+    background: none; border: 1px solid var(--rule); color: var(--ink-soft);
+    padding: 6px 10px; font-size: 11px; font-family: inherit; border-radius: 4px;
+    cursor: pointer; margin-top: 8px;
+  }
+  .sidebar-footer button:hover { background: var(--rule-soft); }
+
+  /* ============ MAIN ============ */
+  .main { padding: 32px 40px 80px; max-width: 1200px; }
+  .page-head { margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--rule); }
+  .page-eyebrow { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); font-weight: 500; margin-bottom: 6px; }
+  .page-title { font-family: var(--serif); font-size: 32px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.1; }
+  .page-title em { font-style: italic; color: var(--accent); }
+  .page-desc { color: var(--ink-soft); margin-top: 8px; font-size: 14px; max-width: 600px; }
+
+  /* ============ DASHBOARD STATS ============ */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 32px; }
+  .stat {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-label { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-muted); }
+  .stat-val { font-family: var(--serif); font-size: 28px; font-weight: 500; margin-top: 6px; letter-spacing: -0.02em; }
+  .stat-meta { font-size: 11px; color: var(--ink-muted); margin-top: 4px; }
+  .stat-meta.up { color: var(--moss); }
+  .stat-meta.down { color: var(--rust); }
+  .stat-accent { position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--accent); }
+  .stat:nth-child(2) .stat-accent { background: var(--moss); }
+  .stat:nth-child(3) .stat-accent { background: var(--amber); }
+  .stat:nth-child(4) .stat-accent { background: var(--slate); }
+
+  /* ============ SECTION ============ */
+  .section { margin-bottom: 36px; }
+  .section-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+  .section-title { font-family: var(--serif); font-size: 18px; font-weight: 500; letter-spacing: -0.01em; }
+  .section-actions { display: flex; gap: 8px; }
+
+  /* ============ BUTTONS ============ */
+  .btn {
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.12s;
+  }
+  .btn:hover { background: #2c2820; }
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink-soft);
+    border: 1px solid var(--rule);
+  }
+  .btn-ghost:hover { background: var(--rule-soft); color: var(--ink); }
+  .btn-sm { padding: 5px 9px; font-size: 11px; }
+  .btn-icon-only {
+    padding: 4px 6px;
+    background: transparent;
+    color: var(--ink-muted);
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1;
+  }
+  .btn-icon-only:hover { background: var(--rule-soft); color: var(--ink); }
+
+  /* ============ CARDS / TABLES ============ */
+  .card {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .table th {
+    text-align: left;
+    padding: 11px 16px;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    font-weight: 500;
+    border-bottom: 1px solid var(--rule);
+    background: var(--bg);
+  }
+  .table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: middle;
+  }
+  .table tr:last-child td { border-bottom: none; }
+  .table tr:hover td { background: rgba(26, 24, 20, 0.015); }
+  .table td.col-actions { text-align: right; white-space: nowrap; }
+  .table td.col-actions button { margin-left: 2px; }
+
+  /* ============ BADGES ============ */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 999px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .b-pending { background: var(--amber-soft); color: var(--amber); }
+  .b-decided { background: var(--moss-soft); color: var(--moss); }
+  .b-ordered { background: var(--slate-soft); color: var(--slate); }
+  .b-installed { background: var(--accent-soft); color: var(--accent); }
+  .b-urgent { background: #fce4dc; color: var(--rust); }
+  .b-open { background: var(--amber-soft); color: var(--amber); }
+  .b-resolved { background: var(--moss-soft); color: var(--moss); }
+  .b-approved { background: var(--moss-soft); color: var(--moss); }
+  .b-rejected { background: #fce4dc; color: var(--rust); }
+  .b-onschedule { background: var(--moss-soft); color: var(--moss); }
+  .b-delayed { background: #fce4dc; color: var(--rust); }
+  .b-complete { background: var(--slate-soft); color: var(--slate); }
+  .b-upcoming { background: var(--rule-soft); color: var(--ink-soft); }
+
+  /* ============ FORMS ============ */
+  .form-grid { display: grid; gap: 12px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  label.fld { display: block; }
+  label.fld span { display: block; font-size: 11px; color: var(--ink-soft); margin-bottom: 4px; font-weight: 500; }
+  input[type=text], input[type=number], input[type=date], select, textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: 13px;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--ink-soft); }
+  textarea { min-height: 60px; resize: vertical; font-family: inherit; }
+
+  /* ============ MODAL ============ */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(26, 24, 20, 0.4);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: var(--paper);
+    border-radius: 10px;
+    padding: 28px;
+    width: 100%; max-width: 540px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid var(--rule);
+    box-shadow: 0 20px 60px rgba(26, 24, 20, 0.2);
+  }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--rule-soft); }
+  .modal-title { font-family: var(--serif); font-size: 20px; font-weight: 500; }
+  .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--ink-muted); padding: 0; line-height: 1; }
+  .modal-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--rule-soft); }
+
+  /* ============ EMPTY STATE ============ */
+  .empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--ink-muted);
+  }
+  .empty-title { font-family: var(--serif); font-size: 16px; color: var(--ink-soft); margin-bottom: 6px; }
+  .empty-desc { font-size: 13px; max-width: 360px; margin: 0 auto 16px; }
+
+  /* ============ COMMUNICATIONS ============ */
+  .comm-list { display: grid; gap: 10px; }
+  .comm-card {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--slate);
+    border-radius: 6px;
+    padding: 14px 16px;
+  }
+  .comm-card.urgent { border-left-color: var(--rust); }
+  .comm-card.resolved { border-left-color: var(--moss); opacity: 0.7; }
+  .comm-head { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+  .comm-meta { font-size: 11px; color: var(--ink-muted); }
+  .comm-with { font-weight: 500; color: var(--ink); }
+  .comm-subject { font-family: var(--serif); font-size: 15px; font-weight: 500; margin: 4px 0 6px; }
+  .comm-body { font-size: 13px; color: var(--ink-soft); white-space: pre-wrap; }
+  .comm-action { font-size: 11px; color: var(--accent); margin-top: 8px; font-weight: 500; }
+
+  /* ============ SCHEDULE / TIMELINE ============ */
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 6px; top: 8px; bottom: 8px;
+    width: 1px; background: var(--rule);
+  }
+  .timeline-item { position: relative; padding-bottom: 18px; }
+  .timeline-item::before {
+    content: ''; position: absolute; left: -22px; top: 6px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--paper); border: 2px solid var(--rule);
+  }
+  .timeline-item.done::before { background: var(--moss); border-color: var(--moss); }
+  .timeline-item.current::before { background: var(--accent); border-color: var(--accent); }
+  .timeline-item.delayed::before { background: var(--rust); border-color: var(--rust); }
+  .timeline-card { background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; }
+  .timeline-date { font-size: 11px; letter-spacing: 0.06em; color: var(--ink-muted); text-transform: uppercase; }
+  .timeline-title { font-family: var(--serif); font-size: 15px; font-weight: 500; margin: 2px 0 4px; }
+  .timeline-meta { font-size: 12px; color: var(--ink-soft); }
+
+  /* ============ BUDGET BAR ============ */
+  .budget-bar {
+    height: 8px; background: var(--rule-soft); border-radius: 4px; overflow: hidden;
+    display: flex;
+  }
+  .budget-bar > div { height: 100%; }
+  .budget-spent { background: var(--accent); }
+  .budget-committed { background: var(--amber); }
+
+  /* ============ FILTERS ============ */
+  .filter-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filter-chip {
+    padding: 5px 10px;
+    border: 1px solid var(--rule);
+    background: var(--paper);
+    border-radius: 999px;
+    font-size: 11px;
+    cursor: pointer;
+    color: var(--ink-soft);
+    font-family: inherit;
+  }
+  .filter-chip:hover { background: var(--rule-soft); }
+  .filter-chip.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .search-input {
+    flex: 1; min-width: 180px; max-width: 280px;
+    padding: 5px 10px; font-size: 12px;
+  }
+
+  /* ============ TWO-COL DASH ============ */
+  .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  /* ============ NOTES ============ */
+  .note {
+    background: var(--amber-soft);
+    border: 1px solid #e7d5b5;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #5a4520;
+    margin-bottom: 14px;
+  }
+  .note strong { font-weight: 600; }
+
+  /* ============ DECISION DETAIL ============ */
+  .details-row { display: grid; grid-template-columns: 120px 1fr; gap: 10px; padding: 6px 0; font-size: 13px; border-bottom: 1px solid var(--rule-soft); }
+  .details-row:last-child { border-bottom: none; }
+  .details-label { color: var(--ink-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; padding-top: 2px; }
+
+  /* misc */
+  .currency { font-family: var(--mono); font-size: 12px; }
+  .text-muted { color: var(--ink-muted); }
+  .text-small { font-size: 12px; }
+  .nowrap { white-space: nowrap; }
+  .hidden { display: none !important; }
+  .center { text-align: center; }
+  .right { text-align: right; }
+
+  /* ============ TOAST ============ */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--ink); color: var(--paper);
+    padding: 10px 16px; border-radius: 6px; font-size: 13px;
+    z-index: 200;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ============ LOADING ============ */
+  .loading {
+    display: flex; align-items: center; justify-content: center;
+    padding: 60px 20px;
+    color: var(--ink-muted);
+    font-size: 13px;
+  }
+
+  /* responsive */
+  /* =============================================================
+     MOBILE STYLES — only apply below 760px, desktop is untouched
+  ============================================================== */
+
+  /* ================================================================
+     MOBILE STYLES — only apply below 760px; desktop UI untouched
+  ================================================================= */
+
+  /* Elements present only on mobile — hidden by default on desktop */
+  #mobileMenuBtn { display: none; }
+  #mobileTopBar { display: none; }
+  #mobileAddFAB { display: none; }
+
+  /* Sidebar backdrop (overlay when drawer is open) */
+  #sidebarBackdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(26, 24, 20, 0.5);
+    z-index: 60;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  #sidebarBackdrop.show { opacity: 1; }
+
+  @media (max-width: 760px) {
+    /* ============ LAYOUT ============ */
+    .app {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+      min-height: 100vh;
+    }
+
+    /* ============ SIDEBAR DRAWER ============ */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 280px;
+      max-width: 85vw;
+      height: 100vh;
+      z-index: 70;
+      transform: translateX(-100%);
+      transition: transform 0.22s ease;
+      box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+      overflow-y: auto;
+    }
+    .sidebar.open { transform: translateX(0); }
+    .nav-btn { padding: 11px 12px; font-size: 14px; }
+    .nav-btn .nav-icon { font-size: 14px; }
+
+    /* ============ MOBILE TOP BAR ============ */
+    #mobileTopBar {
+      display: flex;
+      align-items: center;
+      padding: 10px 14px;
+      background: var(--paper);
+      border-bottom: 1px solid var(--rule);
+      position: sticky; top: 0;
+      z-index: 40;
+      gap: 12px;
+      min-height: 56px;
+    }
+    #mobileMenuBtn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px; height: 40px;
+      background: none;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      color: var(--ink);
+      flex-shrink: 0;
+      padding: 0;
+    }
+    #mobileMenuBtn:active { background: var(--rule-soft); }
+    #mobileTopBarTitle {
+      font-family: var(--serif);
+      font-size: 17px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    #sidebarBackdrop.show { display: block; }
+
+    /* ============ MAIN CONTENT ============ */
+    .main {
+      padding: 16px 14px 88px;
+      max-width: 100vw;
+      overflow-x: hidden;
+    }
+    .page-head { margin-bottom: 18px; padding-bottom: 14px; }
+    .page-title { font-size: 22px; line-height: 1.2; }
+    .page-eyebrow { font-size: 9px; }
+    .page-desc { font-size: 13px; }
+
+    /* ============ STAT CARDS ============ */
+    .stat-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .stat { padding: 12px 14px; }
+    .stat-label { font-size: 9px; }
+    .stat-val { font-size: 20px; }
+    .stat-meta { font-size: 10px; line-height: 1.3; }
+
+    /* Dashboard two-column → single column */
+    .dash-grid { grid-template-columns: 1fr; gap: 14px; }
+
+    /* ============ SECTIONS ============ */
+    .section { margin-bottom: 22px; }
+    .section-head {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      min-width: 0;
+      max-width: 100%;
+    }
+    .section-head > .filter-row { min-width: 0; max-width: 100%; }
+    .section-title { font-size: 16px; }
+
+    /* Hide full-width "+ Add" buttons that lived in section headers —
+       we surface adds via a floating action button instead */
+    .section-head > .btn[data-add] {
+      display: none;
+    }
+
+    /* ============ BUTTONS ============ */
+    .btn {
+      padding: 9px 14px;
+      font-size: 13px;
+      min-height: 38px;
+      justify-content: center;
+    }
+    .btn-sm { padding: 7px 11px; min-height: 32px; }
+    .btn-icon-only {
+      padding: 8px 10px;
+      font-size: 15px;
+      min-width: 36px;
+      min-height: 36px;
+    }
+
+    /* ============ FILTERS — horizontal scroll ============ */
+    .filter-row {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+      mask-image: linear-gradient(to right, black 92%, transparent 100%);
+    }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .filter-chip {
+      flex: 0 0 auto;
+      padding: 7px 14px;
+      font-size: 12px;
+      min-height: 30px;
+    }
+    .search-input {
+      flex: 1 0 auto;
+      min-width: 160px;
+      padding: 8px 12px;
+      font-size: 13px;
+      min-height: 36px;
+    }
+
+    /* ============ TABLES → STACKED CARDS ============
+       Each <tr> = one card. First cell is title, data-labeled cells
+       show as labeled meta rows, badge inlines, actions float right. */
+    .card .table { display: block; width: 100%; max-width: 100%; }
+    .card .table thead { display: none; }
+    .card .table tbody { display: block; width: 100%; }
+    .card .table tr {
+      display: block;
+      position: relative;
+      padding: 14px 56px 14px 14px;
+      border-bottom: 1px solid var(--rule-soft);
+    }
+    .card .table tr:last-child { border-bottom: none; }
+    .card .table tr:hover td { background: transparent; }
+    .card .table td {
+      display: block;
+      padding: 0;
+      border-bottom: none;
+      text-align: left !important;
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--ink-soft);
+    }
+    /* First cell prominence */
+    .card .table td:first-child {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    /* Labeled cells get a small uppercase prefix */
+    .card .table td[data-label]::before {
+      content: attr(data-label);
+      display: inline-block;
+      width: 64px;
+      color: var(--ink-muted);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+    /* Hide cells that only contain placeholder dashes */
+    .card .table td:empty { display: none; }
+    .card .table td:has(> span.text-muted:only-child) { display: none; }
+    /* Badge-only cell inlines */
+    .card .table td:has(> .badge:only-child) {
+      display: inline-block;
+      margin-top: 8px;
+      margin-right: 8px;
+      padding: 0;
+    }
+    /* Actions absolutely positioned in row */
+    .card .table td.col-actions {
+      position: absolute;
+      top: 8px;
+      right: 6px;
+      text-align: right !important;
+      padding: 0;
+      white-space: nowrap;
+    }
+    .card .table td.col-actions .btn-icon-only {
+      padding: 6px 8px;
+      min-width: 32px;
+      min-height: 32px;
+    }
+    /* Inner divs in cells stay block */
+    .card .table td > div { display: block; }
+
+    /* ============ BUDGET OVERVIEW — 2x2 stat cards ============ */
+    .card > div[style*="grid-template-columns: repeat(4, 1fr)"] {
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 16px !important;
+    }
+    #budgetTotal {
+      width: 100% !important;
+      font-size: 20px !important;
+    }
+
+    /* ============ COMM CARDS ============ */
+    .comm-card { padding: 12px 14px; }
+    .comm-subject { font-size: 14px; line-height: 1.35; }
+    .comm-body { font-size: 13px; }
+    .comm-head { flex-direction: column; gap: 6px; align-items: stretch !important; }
+    .comm-head > div:last-child {
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: space-between;
+      gap: 0 !important;
+    }
+
+    /* ============ MODAL — bottom sheet style ============ */
+    .modal-backdrop { padding: 0; align-items: flex-end; }
+    .modal {
+      max-width: 100%;
+      width: 100%;
+      max-height: 92vh;
+      border-radius: 14px 14px 0 0;
+      padding: 20px 16px 28px;
+    }
+    .modal-title { font-size: 17px; }
+    .form-row, .form-row-3 { grid-template-columns: 1fr; }
+    input[type=text], input[type=number], input[type=date], select, textarea {
+      padding: 10px 12px;
+      font-size: 16px;  /* prevent iOS zoom-on-focus */
+    }
+    .modal-foot { flex-direction: column-reverse; gap: 8px; }
+    .modal-foot .btn { width: 100%; }
+
+    /* ============ TIMELINE ============ */
+    .timeline { padding-left: 22px; }
+    .timeline-card { padding: 10px 12px; }
+    .timeline-title { font-size: 14px; }
+    .timeline-meta { font-size: 12px; }
+
+    /* ============ NOTES ============ */
+    .note { font-size: 12.5px; padding: 12px 14px; line-height: 1.5; }
+
+    /* ============ SIGN-IN GATE ============ */
+    #gate > div { padding: 28px 22px; width: 92%; }
+
+    /* ============ TOAST ============ */
+    .toast {
+      bottom: 88px;
+      right: 16px;
+      left: 16px;
+      text-align: center;
+    }
+
+    /* ============ FLOATING ACTION BUTTON ============
+       Replaces full-width "+Add" buttons inside section headers.
+       Appears on views where add makes sense; JS toggles its action. */
+    #mobileAddFAB {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: var(--paper);
+      border: none;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+      cursor: pointer;
+      font-size: 26px;
+      z-index: 50;
+      transition: transform 0.15s, opacity 0.15s;
+    }
+    #mobileAddFAB:active { transform: scale(0.92); }
+    #mobileAddFAB.hidden { opacity: 0; pointer-events: none; transform: translateY(20px); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ========= SIGN-IN GATE ========= -->
+<div id="gate" style="position:fixed; inset:0; background:#1a1814; display:flex; align-items:center; justify-content:center; z-index:1000;">
+  <div style="background:#fbf9f4; padding:40px; border-radius:12px; max-width:400px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div style="font-family:'Fraunces',Georgia,serif; font-size:24px; font-weight:500; letter-spacing:-0.02em; font-style:italic; margin-bottom:6px;">build<span style="color:#8b3a1f">·</span>tracker</div>
+    <div style="font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:#8a8478; margin-bottom:24px;">sign in to continue</div>
+    <p style="font-size:13px; color:#4a463d; line-height:1.5; margin-bottom:20px;">This tracker is shared between you and your build team. Sign in with the Google account you've been added with.</p>
+    <button id="gateGoogle" style="width:100%; padding:11px 14px; background:#fff; color:#1a1814; border:1px solid #d9d2c2; border-radius:6px; font-family:inherit; font-size:14px; font-weight:500; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;">
+      <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
+      Sign in with Google
+    </button>
+    <div id="gateErr" style="font-size:12px; color:#a8421c; margin-top:14px; min-height:16px; line-height:1.4;"></div>
+    <div style="font-size:11px; color:#8a8478; margin-top:18px; padding-top:16px; border-top:1px solid #e8e2d3;">
+      Only emails on the allowlist can access this tracker. If you've been told you have access but can't get in, double-check you're signing in with the right Google account.
+    </div>
+  </div>
+</div>
+
+<div class="app" id="app" style="display:none;">
+  <!-- ========= SIDEBAR ========= -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">build<span>·</span>tracker</div>
+      <div class="brand-sub">your home, organized</div>
+    </div>
+    <nav class="nav" id="nav">
+      <div class="nav-section">Overview</div>
+      <button class="nav-btn active" data-view="dashboard"><span class="nav-icon">◐</span>Dashboard</button>
+      <div class="nav-section">Manage</div>
+      <button class="nav-btn" data-view="selections"><span class="nav-icon">◇</span>Selections</button>
+      <button class="nav-btn" data-view="communications"><span class="nav-icon">✉</span>Communications</button>
+      <button class="nav-btn" data-view="budget"><span class="nav-icon">$</span>Budget &amp; Change Orders</button>
+      <button class="nav-btn" data-view="schedule"><span class="nav-icon">◷</span>Schedule</button>
+      <button class="nav-btn" data-view="contacts"><span class="nav-icon">☺</span>Contacts</button>
+    </nav>
+    <div class="sidebar-footer">
+      <div id="signedInAs" style="font-size:11px; color:var(--ink-muted); margin-bottom:8px; word-break:break-all;"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <span>Synced to cloud</span>
+        <span id="syncIndicator" style="font-size:10px; color:var(--moss); opacity:0.5; transition:opacity 0.3s;">✓ saved</span>
+      </div>
+      <button id="exportBtn">Export backup</button>
+      <button id="importBtn">Import</button>
+      <button id="signoutBtn">Sign out</button>
+      <input type="file" id="importFile" accept=".json" style="display:none">
+    </div>
+  </aside>
+
+  <!-- ========= MAIN ========= -->
+  <div id="mobileTopBar">
+    <button id="mobileMenuBtn" aria-label="Open menu">☰</button>
+    <div id="mobileTopBarTitle">Dashboard</div>
+  </div>
+  <main class="main" id="main">
+    <div class="loading">Loading your data…</div>
+  </main>
+</div>
+
+<!-- ========= MODAL ========= -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" id="modal"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Backdrop for slide-in sidebar (mobile only) -->
+<div id="sidebarBackdrop"></div>
+
+<!-- Floating action button (mobile only — Add for the current view) -->
+<button id="mobileAddFAB" class="hidden" aria-label="Add">+</button>
+
+<script type="module">
+/* ============================================================
+   FIREBASE CONFIG & INIT
+============================================================ */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA8alCkh4d4LhFSYIQ9dbPk4bLX0nC4oeg",
+  authDomain: "home-build-tracker-beta.firebaseapp.com",
+  projectId: "home-build-tracker-beta",
+  storageBucket: "home-build-tracker-beta.firebasestorage.app",
+  messagingSenderId: "366293143762",
+  appId: "1:366293143762:web:aa6e0863597241e5b15d0b"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+// Document reference — single doc that holds all build data
+const DOC_REF = doc(db, "buildtracker", "main");
+
+// Expose to window so the rest of the (non-module) script can use them
+window._fb = {
+  db, DOC_REF, getDoc, setDoc, onSnapshot,
+  auth, provider, signInWithPopup, signOut, onAuthStateChanged
+};
+</script>
+
+<script>
+/* ============================================================
+   STATE & STORAGE (FIREBASE)
+============================================================ */
+const state = {
+  selections: [],
+  communications: [],
+  changeOrders: [],
+  schedule: [],
+  contacts: [],
+  budget: { total: 0, spent: 0 },
+  view: 'dashboard'
+};
+
+let _unsubscribe = null;       // Firestore listener
+let _isApplyingRemote = false; // prevent save→load→save loop
+let _saveTimer = null;         // debounce writes
+
+// Wait for the module script above to load Firebase
+async function waitForFirebase() {
+  for (let i = 0; i < 50; i++) {
+    if (window._fb) return window._fb;
+    await new Promise(r => setTimeout(r, 100));
+  }
+  throw new Error('Firebase failed to load');
+}
+
+async function loadState() {
+  const fb = await waitForFirebase();
+  try {
+    const snap = await fb.getDoc(fb.DOC_REF);
+    if (snap.exists()) {
+      const data = snap.data();
+      Object.assign(state, data);
+    } else {
+      // First run anywhere — seed with the Garcia estimate
+      seedDemoData();
+      await saveState();
+    }
+    // Subscribe to real-time updates from other devices
+    subscribeToRemoteChanges();
+  } catch (e) {
+    console.error('Load failed:', e);
+    showToast('Could not connect to cloud — check internet');
+    // Fall back to local seed so UI still works
+    seedDemoData();
+  }
+}
+
+function subscribeToRemoteChanges() {
+  const fb = window._fb;
+  if (!fb) return;
+  if (_unsubscribe) _unsubscribe();
+  _unsubscribe = fb.onSnapshot(fb.DOC_REF, (snap) => {
+    if (!snap.exists()) return;
+    // Skip our own writes coming back to us
+    if (snap.metadata.hasPendingWrites) return;
+    _isApplyingRemote = true;
+    const data = snap.data();
+    Object.assign(state, data);
+    // Re-render current view to reflect remote changes
+    const fn = VIEWS[state.view] || renderDashboard;
+    document.getElementById('main').innerHTML = fn();
+    bindViewEvents(state.view);
+    _isApplyingRemote = false;
+    // Subtle indicator that data refreshed from cloud
+    const ind = document.getElementById('syncIndicator');
+    if (ind) {
+      ind.textContent = '↻ synced';
+      ind.style.opacity = '1';
+      setTimeout(() => { ind.style.opacity = '0.5'; }, 1500);
+    }
+  }, (err) => {
+    console.error('Subscribe error:', err);
+    showToast('Lost connection to cloud');
+  });
+}
+
+async function saveState() {
+  if (_isApplyingRemote) return; // don't echo remote changes back
+  const fb = window._fb;
+  if (!fb) return;
+  // Debounce — coalesce rapid edits into one write
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(async () => {
+    try {
+      const { view, ...persist } = state;
+      // Strip any undefined values that Firestore rejects
+      const clean = JSON.parse(JSON.stringify(persist));
+      await fb.setDoc(fb.DOC_REF, clean);
+      const ind = document.getElementById('syncIndicator');
+      if (ind) {
+        ind.textContent = '✓ saved';
+        ind.style.opacity = '1';
+        setTimeout(() => { ind.style.opacity = '0.5'; }, 1500);
+      }
+    } catch (e) {
+      console.error('Save failed:', e);
+      showToast('Could not save to cloud');
+    }
+  }, 300);
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+/* ============================================================
+   BRANDING — customize for your contractor / business
+   Edit the three values below. Leave any at '' to use defaults.
+   For logoUrl: place the image file next to index.html in your
+   repo (e.g. 'logo.png'), or use a full https URL to a hosted image.
+============================================================ */
+const BRANDING = {
+  name: '',      // e.g. 'Garcia Construction' — leave blank for default 'build·tracker'
+  tagline: '',   // e.g. 'building dream homes since 1998' — leave blank for default
+  logoUrl: ''    // e.g. 'logo.png' or 'https://example.com/logo.png'
+};
+
+// This file is the BETA build — connects to a separate Firebase project
+// for safe testing. Do not change this flag.
+const IS_BETA = true;
+
+function applyBranding() {
+  const defaultName = 'build·tracker';
+  const defaultTagline = 'your home, organized';
+  const name = (BRANDING.name || '').trim() || defaultName;
+  const tagline = (BRANDING.tagline || '').trim() || defaultTagline;
+  const logoUrl = (BRANDING.logoUrl || '').trim();
+
+  // Render the name with a small accent dot if it has one (matches the
+  // default "build·tracker" styling — splits on first '·' if present)
+  function renderName(n) {
+    if (n.includes('·')) {
+      const [a, b] = n.split('·');
+      return `${escapeHtml(a)}<span>·</span>${escapeHtml(b)}`;
+    }
+    return escapeHtml(n);
+  }
+
+  // Sidebar brand
+  const sidebarBrand = document.querySelector('.sidebar .brand-mark');
+  const sidebarSub = document.querySelector('.sidebar .brand-sub');
+  if (sidebarBrand) sidebarBrand.innerHTML = renderName(name);
+  if (sidebarSub) sidebarSub.textContent = tagline;
+
+  // Sign-in screen brand (inline-styled in the gate <div>)
+  const gateBrand = document.querySelector('#gate > div > div:first-child');
+  const gateSub = document.querySelector('#gate > div > div:nth-child(2)');
+  if (gateBrand) gateBrand.innerHTML = renderName(name);
+  if (gateSub) gateSub.textContent = tagline;
+
+  // Logo (if provided): inject above the brand mark in sidebar AND on gate
+  if (logoUrl) {
+    [
+      { brand: sidebarBrand, maxH: 36 },
+      { brand: gateBrand, maxH: 48 }
+    ].forEach(({ brand, maxH }) => {
+      if (!brand) return;
+      // Avoid double-inserting on re-runs
+      if (brand.previousElementSibling && brand.previousElementSibling.classList && brand.previousElementSibling.classList.contains('branding-logo')) return;
+      const img = document.createElement('img');
+      img.src = logoUrl;
+      img.alt = name;
+      img.className = 'branding-logo';
+      img.style.cssText = `display:block; max-height:${maxH}px; max-width:100%; margin-bottom:10px;`;
+      brand.parentNode.insertBefore(img, brand);
+    });
+  }
+
+  // Document title in browser tab
+  document.title = name;
+
+  // BETA indicator (only present in the beta build)
+  if (typeof IS_BETA !== 'undefined' && IS_BETA) {
+    document.title = '[BETA] ' + name;
+    // Inject a small BETA badge next to the sidebar brand mark
+    if (sidebarBrand && !document.getElementById('betaBadge')) {
+      const badge = document.createElement('span');
+      badge.id = 'betaBadge';
+      badge.textContent = 'BETA';
+      badge.style.cssText = 'display:inline-block; margin-left:6px; padding:2px 6px; font-size:9px; font-weight:600; letter-spacing:0.08em; background:#b8761a; color:#fff; border-radius:3px; vertical-align:middle; font-family:Inter,sans-serif; font-style:normal;';
+      sidebarBrand.appendChild(badge);
+    }
+    // Add a thin amber stripe at the top of the page so it's unmistakable
+    if (!document.getElementById('betaStripe')) {
+      const stripe = document.createElement('div');
+      stripe.id = 'betaStripe';
+      stripe.textContent = 'BETA — test environment';
+      stripe.style.cssText = 'position:fixed; top:0; left:0; right:0; height:22px; background:#b8761a; color:#fff; font-size:10px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; text-align:center; line-height:22px; z-index:200; font-family:Inter,sans-serif;';
+      document.body.appendChild(stripe);
+      // Push the rest of the page down by 22px so the stripe doesn't cover content
+      document.body.style.paddingTop = '22px';
+    }
+  }
+}
+
+function seedDemoData() {
+  state.budget = { total: 425040, spent: 0 };
+  state.contacts = [
+    { id: uid(), name: 'Garcia (Builder)', role: 'General Contractor', company: '', phone: '', email: '' }
+  ];
+  state.selections = [
+    { id: uid(), category: 'Plans & Permits', item: 'Building permits', status: 'installed', vendor: '', choice: '', cost: 3500, actual: 3446, deadline: '', notes: '' },
+    { id: uid(), category: 'Plans & Permits', item: 'Survey', status: 'pending', vendor: '', choice: '', cost: 1000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Plans & Permits', item: 'Engineering fees', status: 'installed', vendor: '', choice: '', cost: 1200, actual: 1335, deadline: '', notes: 'Over budget by $135' },
+    { id: uid(), category: 'Site Prep', item: 'Dumpster', status: 'pending', vendor: '', choice: '', cost: 1600, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Site Prep', item: 'Portable toilet', status: 'pending', vendor: '', choice: '', cost: 750, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Utilities', item: 'Septic tank', status: 'pending', vendor: '', choice: '', cost: 8000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Utilities', item: 'Sewer hookup', status: 'pending', vendor: '', choice: '', cost: 750, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Utilities', item: 'Water hookup', status: 'ordered', vendor: '', choice: '', cost: 1500, actual: 700, deadline: '', notes: '' },
+    { id: uid(), category: 'Utilities', item: 'Electrical hookup', status: 'ordered', vendor: '', choice: '', cost: 1200, actual: 750, deadline: '', notes: '' },
+    { id: uid(), category: 'Utilities', item: 'Propane', status: 'pending', vendor: '', choice: '', cost: 4500, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Excavation', item: 'Rough grading', status: 'installed', vendor: '', choice: '', cost: 500, actual: 500, deadline: '', notes: '' },
+    { id: uid(), category: 'Excavation', item: 'Foundation excavation', status: 'ordered', vendor: '', choice: '', cost: 3000, actual: 2600, deadline: '', notes: '' },
+    { id: uid(), category: 'Excavation', item: 'Backfill', status: 'installed', vendor: '', choice: '', cost: 8000, actual: 12402, deadline: '', notes: 'OVER budget by $4,402' },
+    { id: uid(), category: 'Excavation', item: 'Gravel', status: 'installed', vendor: '', choice: '', cost: 4500, actual: 7931, deadline: '', notes: 'OVER budget by $3,431' },
+    { id: uid(), category: 'Excavation', item: 'Compaction', status: 'installed', vendor: '', choice: '', cost: 3000, actual: 3000, deadline: '', notes: '' },
+    { id: uid(), category: 'Excavation', item: 'Final grade', status: 'pending', vendor: '', choice: '', cost: 1000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Foundation', item: 'Footings labor', status: 'ordered', vendor: '', choice: '', cost: 3500, actual: 3200, deadline: '', notes: '' },
+    { id: uid(), category: 'Foundation', item: 'Footings concrete', status: 'ordered', vendor: '', choice: '', cost: 6000, actual: 4681, deadline: '', notes: '' },
+    { id: uid(), category: 'Foundation', item: 'Foundation labor', status: 'ordered', vendor: '', choice: '', cost: 6500, actual: 5525, deadline: '', notes: '' },
+    { id: uid(), category: 'Foundation', item: 'Foundation concrete', status: 'ordered', vendor: '', choice: '', cost: 9000, actual: 6016, deadline: '', notes: '' },
+    { id: uid(), category: 'Foundation', item: 'Rebar', status: 'ordered', vendor: '', choice: '', cost: 4000, actual: 3600, deadline: '', notes: '' },
+    { id: uid(), category: 'Foundation', item: 'Foundation hardware', status: 'ordered', vendor: '', choice: '', cost: 1000, actual: 504, deadline: '', notes: '' },
+    { id: uid(), category: 'Foundation', item: 'Pump truck', status: 'installed', vendor: '', choice: '', cost: 2500, actual: 2464, deadline: '', notes: '' },
+    { id: uid(), category: 'Foundation', item: 'Damp proofing / French drains', status: 'pending', vendor: '', choice: '', cost: 800, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Concrete Flatwork', item: 'Slab & garage labor', status: 'installed', vendor: '', choice: '', cost: 4500, actual: 5972, deadline: '', notes: 'OVER budget by $1,472' },
+    { id: uid(), category: 'Concrete Flatwork', item: 'Slab & garage concrete', status: 'installed', vendor: '', choice: '', cost: 9000, actual: 9676, deadline: '', notes: 'OVER budget by $676' },
+    { id: uid(), category: 'Concrete Flatwork', item: 'Patios (labor + material)', status: 'ordered', vendor: '', choice: '', cost: 4000, actual: 2964, deadline: '', notes: '' },
+    { id: uid(), category: 'Concrete Flatwork', item: 'Exterior stairs', status: 'pending', vendor: '', choice: '', cost: 2000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Concrete Flatwork', item: 'Driveway', status: 'pending', vendor: '', choice: '', cost: 7000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Concrete Flatwork', item: 'Walkways/sidewalk', status: 'pending', vendor: '', choice: '', cost: 2000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Concrete Flatwork', item: 'Concrete exterior', status: 'pending', vendor: '', choice: '', cost: 1000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Concrete Flatwork', item: 'Porch cap', status: 'installed', vendor: '', choice: '', cost: 2000, actual: 2000, deadline: '', notes: '' },
+    { id: uid(), category: 'Framing', item: 'Lumber', status: 'installed', vendor: '', choice: '', cost: 18000, actual: 18678, deadline: '', notes: 'Over budget by $678' },
+    { id: uid(), category: 'Framing', item: 'Framing labor', status: 'installed', vendor: '', choice: '', cost: 22000, actual: 21000, deadline: '', notes: '' },
+    { id: uid(), category: 'Framing', item: 'Trusses', status: 'installed', vendor: '', choice: '', cost: 12500, actual: 14035, deadline: '', notes: 'OVER budget by $1,535' },
+    { id: uid(), category: 'Exterior', item: 'Weather barrier', status: 'pending', vendor: '', choice: '', cost: 1500, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Exterior', item: 'Soffit and fascia', status: 'pending', vendor: '', choice: '', cost: 5500, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Exterior', item: 'Wood beams', status: 'pending', vendor: '', choice: '', cost: 2000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Exterior', item: 'Fiber cement siding', status: 'pending', vendor: '', choice: '', cost: 13500, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Exterior', item: 'Roof', status: 'pending', vendor: '', choice: '', cost: 13000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Exterior', item: 'Exterior paint', status: 'pending', vendor: '', choice: '', cost: 5000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Exterior', item: 'Gutters', status: 'pending', vendor: '', choice: '', cost: 1500, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Windows & Doors', item: 'Exterior doors', status: 'pending', vendor: '', choice: '', cost: 5000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Windows & Doors', item: 'Windows', status: 'ordered', vendor: '', choice: '', cost: 5500, actual: 4775, deadline: '', notes: 'White Cascade' },
+    { id: uid(), category: 'Windows & Doors', item: 'Garage door', status: 'pending', vendor: '', choice: '', cost: 6500, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Windows & Doors', item: 'Door hardware (int/ext)', status: 'pending', vendor: '', choice: '', cost: 1000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Plumbing', item: 'Plumbing (labor + fixtures)', status: 'pending', vendor: '', choice: '', cost: 15000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Plumbing', item: 'Tubs', status: 'pending', vendor: '', choice: '', cost: 1000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Electrical', item: 'Electrical', status: 'ordered', vendor: '', choice: '', cost: 14000, actual: 10057, deadline: '', notes: '' },
+    { id: uid(), category: 'HVAC', item: 'Furnace / AC', status: 'pending', vendor: '', choice: '', cost: 12500, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Insulation', item: 'General insulation', status: 'pending', vendor: '', choice: '', cost: 7000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Insulation', item: 'Foam board', status: 'pending', vendor: '', choice: '', cost: 1000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Drywall', item: 'House drywall (labor + material)', status: 'pending', vendor: '', choice: '', cost: 13500, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Interior Finish', item: 'Interior & barn doors', status: 'pending', vendor: '', choice: '', cost: 3200, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Interior Finish', item: 'Finish material', status: 'pending', vendor: '', choice: '', cost: 3500, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Interior Finish', item: 'Finish labor', status: 'pending', vendor: '', choice: '', cost: 4500, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Interior Finish', item: 'Paint', status: 'pending', vendor: '', choice: '', cost: 8500, actual: 0, deadline: '', notes: 'Two-tone' },
+    { id: uid(), category: 'Interior Finish', item: 'Lighting', status: 'pending', vendor: '', choice: '', cost: 2000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Interior Finish', item: 'Wood/laminate floor', status: 'pending', vendor: '', choice: '', cost: 6000, actual: 0, deadline: '', notes: 'LVP' },
+    { id: uid(), category: 'Interior Finish', item: 'Carpet', status: 'pending', vendor: '', choice: '', cost: 4000, actual: 0, deadline: '', notes: 'All bedrooms' },
+    { id: uid(), category: 'Interior Finish', item: 'Tile surrounds', status: 'pending', vendor: '', choice: '', cost: 3500, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Interior Finish', item: 'Master shower tile', status: 'pending', vendor: '', choice: '', cost: 4000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Interior Finish', item: 'Cleaning', status: 'pending', vendor: '', choice: '', cost: 800, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Interior Finish', item: 'Tile floors', status: 'pending', vendor: '', choice: '', cost: 4000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Kitchen & Bath', item: 'Cabinets', status: 'ordered', vendor: '', choice: '', cost: 16500, actual: 11399, deadline: '', notes: '' },
+    { id: uid(), category: 'Kitchen & Bath', item: 'Countertops', status: 'pending', vendor: '', choice: '', cost: 7000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Kitchen & Bath', item: 'Shower doors', status: 'pending', vendor: '', choice: '', cost: 800, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Kitchen & Bath', item: 'Mirrors', status: 'pending', vendor: '', choice: '', cost: 500, actual: 0, deadline: '', notes: 'Frameless' },
+    { id: uid(), category: 'Kitchen & Bath', item: 'Bath hardware', status: 'pending', vendor: '', choice: '', cost: 500, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Appliances', item: 'Appliance package', status: 'ordered', vendor: '', choice: '', cost: 3500, actual: 2512, deadline: '', notes: '' },
+    { id: uid(), category: 'Appliances', item: 'Appliance install', status: 'pending', vendor: '', choice: '', cost: 500, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Soft Costs', item: 'Contingencies', status: 'pending', vendor: '', choice: '', cost: 24670, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Soft Costs', item: 'Builders risk insurance', status: 'pending', vendor: '', choice: '', cost: 2000, actual: 0, deadline: '', notes: '' },
+    { id: uid(), category: 'Soft Costs', item: 'Management fee', status: 'ordered', vendor: '', choice: '', cost: 9000, actual: 4500, deadline: '', notes: '' },
+    { id: uid(), category: 'Soft Costs', item: 'Build/management fee', status: 'ordered', vendor: '', choice: '', cost: 55440, actual: 23882, deadline: '', notes: '' }
+  ];
+  state.communications = [
+    { id: uid(), date: '2025-10-07', with: 'Garcia (Builder)', channel: 'email', subject: 'Estimate received — $425,040 total', body: 'Imported from estimate spreadsheet dated 10/07/2025. Total budget: $425,040. Includes $24,670 contingency and $55,440 build/management fee. Several line items already running over (backfill, gravel, slab labor/concrete, lumber, trusses, engineering fees) — total overage visible in Selections view.', status: 'resolved', followUp: '' }
+  ];
+  state.changeOrders = [];
+  state.schedule = [
+    { id: uid(), phase: 'Plans, permits & site prep', start: '', end: '', status: 'complete', notes: 'Permits paid, survey pending' },
+    { id: uid(), phase: 'Excavation & foundation', start: '', end: '', status: 'complete', notes: 'Some overages on backfill, gravel' },
+    { id: uid(), phase: 'Concrete flatwork', start: '', end: '', status: 'current', notes: 'Slab work complete, driveway/walks pending' },
+    { id: uid(), phase: 'Framing', start: '', end: '', status: 'current', notes: 'Lumber + trusses paid, labor partial' },
+    { id: uid(), phase: 'Rough-ins (plumb, elec, HVAC)', start: '', end: '', status: 'current', notes: 'Electrical partial, plumbing and HVAC pending' },
+    { id: uid(), phase: 'Exterior (siding, roof, paint)', start: '', end: '', status: 'upcoming', notes: '' },
+    { id: uid(), phase: 'Windows & doors', start: '', end: '', status: 'upcoming', notes: 'Windows ordered (White Cascade)' },
+    { id: uid(), phase: 'Insulation & drywall', start: '', end: '', status: 'upcoming', notes: '' },
+    { id: uid(), phase: 'Interior finishes', start: '', end: '', status: 'upcoming', notes: '' },
+    { id: uid(), phase: 'Kitchen & bath', start: '', end: '', status: 'upcoming', notes: 'Cabinets partial pay' },
+    { id: uid(), phase: 'Appliances & final', start: '', end: '', status: 'upcoming', notes: '' }
+  ];
+}
+
+/* ============================================================
+   HELPERS
+============================================================ */
+function fmtMoney(n) {
+  return '$' + (Math.round(n || 0)).toLocaleString();
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  const [y, m, day] = d.split('-');
+  return `${m}/${day}/${y.slice(2)}`;
+}
+function fmtDateLong(d) {
+  if (!d) return '—';
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function daysFromNow(d) {
+  if (!d) return null;
+  const t = new Date(d + 'T00:00:00');
+  const now = new Date(); now.setHours(0,0,0,0);
+  return Math.round((t - now) / 86400000);
+}
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ============================================================
+   ROUTER
+============================================================ */
+const VIEWS = {
+  dashboard: renderDashboard,
+  selections: renderSelections,
+  communications: renderCommunications,
+  budget: renderBudget,
+  schedule: renderSchedule,
+  contacts: renderContacts
+};
+
+const VIEW_TITLES = {
+  dashboard: 'Dashboard',
+  selections: 'Selections',
+  communications: 'Communications',
+  budget: 'Budget',
+  schedule: 'Schedule',
+  contacts: 'Contacts'
+};
+
+// Mobile FAB — which "Add" action each view exposes (null = no FAB)
+const VIEW_FAB = {
+  dashboard: null,
+  selections: { add: 'selection', label: 'Add selection' },
+  communications: { add: 'comm', label: 'Log conversation' },
+  budget: { add: 'co', label: 'Add change order' },
+  schedule: { add: 'phase', label: 'Add phase' },
+  contacts: { add: 'contact', label: 'Add contact' }
+};
+
+function setView(view, skipHistory) {
+  state.view = view;
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  const fn = VIEWS[view] || renderDashboard;
+  document.getElementById('main').innerHTML = fn();
+  bindViewEvents(view);
+  window.scrollTo(0, 0);
+  // Update mobile top bar title
+  const tb = document.getElementById('mobileTopBarTitle');
+  if (tb) tb.textContent = VIEW_TITLES[view] || 'Dashboard';
+  // Update FAB
+  const fab = document.getElementById('mobileAddFAB');
+  if (fab) {
+    const cfg = VIEW_FAB[view];
+    if (cfg) {
+      fab.classList.remove('hidden');
+      fab.setAttribute('aria-label', cfg.label);
+      fab.dataset.add = cfg.add;
+    } else {
+      fab.classList.add('hidden');
+      delete fab.dataset.add;
+    }
+  }
+  // Push history state so back button works
+  if (!skipHistory) {
+    history.pushState({ view }, '', '#' + view);
+  }
+}
+
+/* ============================================================
+   DASHBOARD VIEW
+============================================================ */
+function renderDashboard() {
+  const pending = state.selections.filter(s => s.status === 'pending').length;
+  const openComms = state.communications.filter(c => c.status === 'open').length;
+  const budgetTotal = state.selections.reduce((sum, s) => sum + (s.cost || 0), 0);
+  const actualPaid = state.selections.reduce((sum, s) => sum + (s.actual || 0), 0);
+  const approvedCOs = state.changeOrders.filter(c => c.status === 'approved').reduce((s, c) => s + c.amount, 0);
+  const total = state.budget.total || 1;
+  const paidPct = Math.min(100, Math.round((actualPaid / total) * 100));
+
+  // Items running over budget
+  const overItems = state.selections.filter(s => (s.actual || 0) > (s.cost || 0) && s.actual > 0);
+  const totalOver = overItems.reduce((sum, s) => sum + ((s.actual || 0) - (s.cost || 0)), 0);
+
+  const currentPhase = state.schedule.find(s => s.status === 'current');
+  const upcomingDeadlines = state.selections
+    .filter(s => s.status === 'pending' && s.deadline)
+    .sort((a, b) => a.deadline.localeCompare(b.deadline))
+    .slice(0, 5);
+
+  // Biggest pending costs (items not yet paid, high budget)
+  const bigPending = state.selections
+    .filter(s => (s.actual || 0) === 0 && (s.cost || 0) > 0)
+    .sort((a, b) => b.cost - a.cost)
+    .slice(0, 6);
+
+  const recentComms = [...state.communications]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 4);
+
+  return `
+    <div class="page-head">
+      <div class="page-eyebrow">Mid-build · Garcia estimate</div>
+      <h1 class="page-title">Your <em>home</em>, at a glance</h1>
+      <p class="page-desc">Live numbers from your estimate sheet. ${actualPaid > 0 ? `You've paid <strong>${fmtMoney(actualPaid)}</strong> of a <strong>${fmtMoney(total)}</strong> budget.` : ''}</p>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="stat-accent"></div>
+        <div class="stat-label">Paid to date</div>
+        <div class="stat-val">${fmtMoney(actualPaid)}</div>
+        <div class="stat-meta">${paidPct}% of ${fmtMoney(total)} budget</div>
+      </div>
+      <div class="stat">
+        <div class="stat-accent"></div>
+        <div class="stat-label">Pending selections</div>
+        <div class="stat-val">${pending}</div>
+        <div class="stat-meta">not yet decided or ordered</div>
+      </div>
+      <div class="stat">
+        <div class="stat-accent"></div>
+        <div class="stat-label">Over budget</div>
+        <div class="stat-val" style="${totalOver > 0 ? 'color:var(--rust)' : ''}">${overItems.length}</div>
+        <div class="stat-meta ${totalOver > 0 ? 'down' : ''}">${totalOver > 0 ? `+${fmtMoney(totalOver)} over so far` : 'on track'}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-accent"></div>
+        <div class="stat-label">Open conversations</div>
+        <div class="stat-val">${openComms}</div>
+        <div class="stat-meta">need follow-up</div>
+      </div>
+    </div>
+
+    ${overItems.length > 0 ? `
+      <div class="note">
+        <strong>Heads up — ${overItems.length} line items are over budget</strong> totaling <strong>${fmtMoney(totalOver)}</strong>: ${overItems.slice(0, 4).map(s => escapeHtml(s.item)).join(', ')}${overItems.length > 4 ? '…' : ''}. Check the budget tab for full breakdown.
+      </div>
+    ` : ''}
+
+    <div class="dash-grid">
+      <div class="section">
+        <div class="section-head">
+          <h2 class="section-title">Biggest pending costs</h2>
+          <button class="btn btn-ghost btn-sm" onclick="setView('selections')">View all →</button>
+        </div>
+        ${bigPending.length === 0 ? `
+          <div class="card"><div class="empty"><div class="empty-title">All paid</div></div></div>
+        ` : `
+          <div class="card">
+            <table class="table">
+              <tbody>
+                ${bigPending.map(s => `
+                  <tr>
+                    <td>
+                      <div style="font-weight:500">${escapeHtml(s.item)}</div>
+                      <div class="text-small text-muted">${escapeHtml(s.category)}</div>
+                    </td>
+                    <td class="right currency" style="font-weight:500">${fmtMoney(s.cost)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `}
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h2 class="section-title">Recent communications</h2>
+          <button class="btn btn-ghost btn-sm" onclick="setView('communications')">View all →</button>
+        </div>
+        ${recentComms.length === 0 ? `
+          <div class="card"><div class="empty"><div class="empty-title">Nothing logged yet</div><div class="empty-desc">Use the Communications tab to start a log.</div></div></div>
+        ` : `
+          <div class="comm-list">
+            ${recentComms.map(c => `
+              <div class="comm-card ${c.status === 'open' ? '' : 'resolved'}">
+                <div class="comm-head">
+                  <div>
+                    <div class="comm-meta"><span class="comm-with">${escapeHtml(c.with)}</span> · ${escapeHtml(c.channel)} · ${fmtDate(c.date)}</div>
+                    <div class="comm-subject">${escapeHtml(c.subject)}</div>
+                  </div>
+                  <span class="badge ${c.status === 'open' ? 'b-open' : 'b-resolved'}">${c.status}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2 class="section-title">Where you are in the build</h2>
+        <button class="btn btn-ghost btn-sm" onclick="setView('schedule')">Full schedule →</button>
+      </div>
+      <div class="card" style="padding:18px 22px">
+        ${renderMiniTimeline()}
+      </div>
+    </div>
+  `;
+}
+
+function renderMiniTimeline() {
+  const phases = state.schedule;
+  if (!phases.length) return '<div class="empty"><div class="empty-title">No phases yet</div></div>';
+  return `<div style="display:flex; gap:4px; align-items:stretch">
+    ${phases.map(p => {
+      const colors = { complete: 'var(--moss)', current: 'var(--accent)', delayed: 'var(--rust)', upcoming: 'var(--rule)' };
+      return `<div title="${escapeHtml(p.phase)} (${fmtDate(p.start)} – ${fmtDate(p.end)})"
+        style="flex:1; min-height:48px; background:${colors[p.status]||'var(--rule)'}; border-radius:3px; position:relative; cursor:default">
+        <div style="position:absolute; bottom:-22px; left:0; right:0; text-align:center; font-size:10px; color:var(--ink-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis">${escapeHtml(p.phase.split(' ')[0])}</div>
+      </div>`;
+    }).join('')}
+  </div>
+  <div style="margin-top:36px; display:flex; gap:18px; font-size:11px; color:var(--ink-muted)">
+    <span><span style="display:inline-block; width:10px; height:10px; background:var(--moss); border-radius:2px; vertical-align:middle; margin-right:5px"></span>Complete</span>
+    <span><span style="display:inline-block; width:10px; height:10px; background:var(--accent); border-radius:2px; vertical-align:middle; margin-right:5px"></span>In progress</span>
+    <span><span style="display:inline-block; width:10px; height:10px; background:var(--rule); border-radius:2px; vertical-align:middle; margin-right:5px"></span>Upcoming</span>
+  </div>`;
+}
+
+/* ============================================================
+   SELECTIONS VIEW
+============================================================ */
+let selFilters = { status: 'all', category: 'all', q: '' };
+
+function renderSelections() {
+  const cats = ['all', ...new Set(state.selections.map(s => s.category))];
+  const statuses = ['all', 'pending', 'decided', 'ordered', 'installed'];
+
+  let items = state.selections.slice();
+  if (selFilters.status !== 'all') items = items.filter(s => s.status === selFilters.status);
+  if (selFilters.category !== 'all') items = items.filter(s => s.category === selFilters.category);
+  if (selFilters.q) {
+    const q = selFilters.q.toLowerCase();
+    items = items.filter(s => (s.item + ' ' + s.choice + ' ' + s.vendor + ' ' + s.notes).toLowerCase().includes(q));
+  }
+  items.sort((a, b) => (a.deadline || '9999').localeCompare(b.deadline || '9999'));
+
+  return `
+    <div class="page-head">
+      <div class="page-eyebrow">Track every choice</div>
+      <h1 class="page-title"><em>Selections</em> &amp; finishes</h1>
+      <p class="page-desc">Every decision your build requires — what's chosen, what's pending, deadlines, and costs.</p>
+    </div>
+
+    <div class="section-head">
+      <div class="filter-row">
+        ${statuses.map(s => `<button class="filter-chip ${selFilters.status===s?'active':''}" data-sel-status="${s}">${s}</button>`).join('')}
+      </div>
+      <button class="btn" data-add="selection"><span>+</span> Add selection</button>
+    </div>
+
+    <div class="filter-row">
+      <input type="text" class="search-input" placeholder="Search items, vendors, notes…" id="selSearch" value="${escapeHtml(selFilters.q)}">
+      ${cats.map(c => `<button class="filter-chip ${selFilters.category===c?'active':''}" data-sel-cat="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join('')}
+    </div>
+
+    ${items.length === 0 ? `
+      <div class="card"><div class="empty">
+        <div class="empty-title">No selections match</div>
+        <div class="empty-desc">Try clearing filters, or add your first selection to track.</div>
+      </div></div>
+    ` : `
+      <div class="card">
+        <table class="table">
+          <thead><tr>
+            <th>Item</th><th>Vendor / Choice</th><th class="right">Budget</th><th class="right">Paid</th><th class="right">Variance</th><th>Status</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${items.map(s => {
+              const variance = (s.actual || 0) - (s.cost || 0);
+              const overBudget = variance > 0 && s.actual > 0;
+              const dd = daysFromNow(s.deadline);
+              const urgent = s.status === 'pending' && dd !== null && dd <= 7;
+              return `<tr>
+                <td>
+                  <div style="font-weight:500">${escapeHtml(s.item)}</div>
+                  <div class="text-small text-muted">${escapeHtml(s.category)}${s.deadline ? ' · due ' + fmtDate(s.deadline) : ''}${urgent ? ' <span style="color:var(--rust);font-weight:500">urgent</span>' : ''}</div>
+                </td>
+                <td class="text-small">
+                  ${escapeHtml(s.vendor) || ''}
+                  ${s.choice ? `<div class="text-small text-muted">${escapeHtml(s.choice)}</div>` : ''}
+                  ${s.notes ? `<div class="text-small" style="color:var(--ink-muted); font-style:italic">${escapeHtml(s.notes)}</div>` : ''}
+                  ${!s.vendor && !s.choice && !s.notes ? '<span class="text-muted">—</span>' : ''}
+                </td>
+                <td class="currency right" data-label="Budget">${s.cost ? fmtMoney(s.cost) : '<span class="text-muted">—</span>'}</td>
+                <td class="currency right" data-label="Paid">${s.actual ? fmtMoney(s.actual) : '<span class="text-muted">—</span>'}</td>
+                <td class="currency right ${overBudget ? '' : ''}" data-label="Variance" style="${overBudget ? 'color:var(--rust); font-weight:500' : (variance < 0 ? 'color:var(--moss)' : 'color:var(--ink-muted)')}">
+                  ${s.actual ? (variance === 0 ? '—' : (variance > 0 ? '+' : '') + fmtMoney(variance)) : '<span class="text-muted">—</span>'}
+                </td>
+                <td><span class="badge b-${s.status}">${s.status}</span></td>
+                <td class="col-actions">
+                  <button class="btn-icon-only" data-edit-sel="${s.id}" title="Edit">✎</button>
+                  <button class="btn-icon-only" data-del-sel="${s.id}" title="Delete">×</button>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `}
+  `;
+}
+
+function selectionForm(item) {
+  const s = item || { category: '', item: '', status: 'pending', vendor: '', choice: '', cost: '', actual: '', deadline: '', notes: '' };
+  return `
+    <div class="form-grid">
+      <div class="form-row">
+        <label class="fld"><span>Category</span><input type="text" id="f-category" placeholder="e.g. Kitchen, Bathrooms, Lighting" value="${escapeHtml(s.category)}"></label>
+        <label class="fld"><span>Item</span><input type="text" id="f-item" placeholder="e.g. Countertops" value="${escapeHtml(s.item)}"></label>
+      </div>
+      <label class="fld"><span>Choice / details</span>
+        <input type="text" id="f-choice" placeholder="What you picked (or are leaning toward)" value="${escapeHtml(s.choice)}">
+      </label>
+      <div class="form-row-3">
+        <label class="fld"><span>Vendor</span><input type="text" id="f-vendor" value="${escapeHtml(s.vendor)}"></label>
+        <label class="fld"><span>Budget ($)</span><input type="number" id="f-cost" value="${s.cost||''}" placeholder="0"></label>
+        <label class="fld"><span>Paid so far ($)</span><input type="number" id="f-actual" value="${s.actual||''}" placeholder="0"></label>
+      </div>
+      <div class="form-row">
+        <label class="fld"><span>Status</span>
+          <select id="f-status">
+            <option value="pending" ${s.status==='pending'?'selected':''}>Pending</option>
+            <option value="decided" ${s.status==='decided'?'selected':''}>Decided</option>
+            <option value="ordered" ${s.status==='ordered'?'selected':''}>Ordered / partial pay</option>
+            <option value="installed" ${s.status==='installed'?'selected':''}>Installed / paid</option>
+          </select>
+        </label>
+        <label class="fld"><span>Deadline</span><input type="date" id="f-deadline" value="${s.deadline||''}"></label>
+      </div>
+      <label class="fld"><span>Notes</span><textarea id="f-notes">${escapeHtml(s.notes)}</textarea></label>
+    </div>
+  `;
+}
+
+function readSelectionForm() {
+  return {
+    category: document.getElementById('f-category').value.trim() || 'General',
+    item: document.getElementById('f-item').value.trim(),
+    choice: document.getElementById('f-choice').value.trim(),
+    vendor: document.getElementById('f-vendor').value.trim(),
+    cost: Number(document.getElementById('f-cost').value) || 0,
+    actual: Number(document.getElementById('f-actual').value) || 0,
+    status: document.getElementById('f-status').value,
+    deadline: document.getElementById('f-deadline').value,
+    notes: document.getElementById('f-notes').value.trim()
+  };
+}
+
+/* ============================================================
+   COMMUNICATIONS VIEW
+============================================================ */
+let commFilters = { status: 'all', q: '' };
+
+function renderCommunications() {
+  let items = state.communications.slice();
+  if (commFilters.status !== 'all') items = items.filter(c => c.status === commFilters.status);
+  if (commFilters.q) {
+    const q = commFilters.q.toLowerCase();
+    items = items.filter(c => (c.with + ' ' + c.subject + ' ' + c.body).toLowerCase().includes(q));
+  }
+  items.sort((a, b) => b.date.localeCompare(a.date));
+
+  return `
+    <div class="page-head">
+      <div class="page-eyebrow">Every conversation, logged</div>
+      <h1 class="page-title"><em>Communications</em> log</h1>
+      <p class="page-desc">A running record of every conversation with your builder, architect, and trades. Open items rise to the top.</p>
+    </div>
+
+    <div class="section-head">
+      <div class="filter-row">
+        <button class="filter-chip ${commFilters.status==='all'?'active':''}" data-comm-status="all">All</button>
+        <button class="filter-chip ${commFilters.status==='open'?'active':''}" data-comm-status="open">Open</button>
+        <button class="filter-chip ${commFilters.status==='resolved'?'active':''}" data-comm-status="resolved">Resolved</button>
+        <input type="text" class="search-input" placeholder="Search…" id="commSearch" value="${escapeHtml(commFilters.q)}">
+      </div>
+      <button class="btn" data-add="comm"><span>+</span> Log conversation</button>
+    </div>
+
+    ${items.length === 0 ? `
+      <div class="card"><div class="empty">
+        <div class="empty-title">Nothing logged</div>
+        <div class="empty-desc">Log a phone call, email, text, or site visit so you have a trail of what was decided.</div>
+      </div></div>
+    ` : `
+      <div class="comm-list">
+        ${items.map(c => `
+          <div class="comm-card ${c.status === 'open' ? '' : 'resolved'}">
+            <div class="comm-head">
+              <div style="flex:1; min-width:0">
+                <div class="comm-meta"><span class="comm-with">${escapeHtml(c.with)}</span> · ${escapeHtml(c.channel)} · ${fmtDate(c.date)}</div>
+                <div class="comm-subject">${escapeHtml(c.subject)}</div>
+                <div class="comm-body">${escapeHtml(c.body)}</div>
+                ${c.followUp ? `<div class="comm-action">↳ ${escapeHtml(c.followUp)}</div>` : ''}
+              </div>
+              <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end">
+                <span class="badge ${c.status === 'open' ? 'b-open' : 'b-resolved'}">${c.status}</span>
+                <div class="nowrap">
+                  <button class="btn-icon-only" data-toggle-comm="${c.id}" title="Toggle status">✓</button>
+                  <button class="btn-icon-only" data-edit-comm="${c.id}" title="Edit">✎</button>
+                  <button class="btn-icon-only" data-del-comm="${c.id}" title="Delete">×</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `}
+  `;
+}
+
+function commForm(item) {
+  const c = item || { date: new Date().toISOString().slice(0,10), with: '', channel: 'email', subject: '', body: '', status: 'open', followUp: '' };
+  const contacts = state.contacts.map(c => c.name);
+  return `
+    <div class="form-grid">
+      <div class="form-row-3">
+        <label class="fld"><span>Date</span><input type="date" id="f-date" value="${c.date}"></label>
+        <label class="fld"><span>With</span>
+          <input type="text" id="f-with" list="contact-list" value="${escapeHtml(c.with)}" placeholder="Name">
+          <datalist id="contact-list">${contacts.map(n => `<option value="${escapeHtml(n)}">`).join('')}</datalist>
+        </label>
+        <label class="fld"><span>Channel</span>
+          <select id="f-channel">
+            ${['email','phone','text','site visit','meeting','other'].map(ch => `<option ${c.channel===ch?'selected':''}>${ch}</option>`).join('')}
+          </select>
+        </label>
+      </div>
+      <label class="fld"><span>Subject</span><input type="text" id="f-subject" value="${escapeHtml(c.subject)}" placeholder="What was discussed"></label>
+      <label class="fld"><span>What was said / decided</span><textarea id="f-body" style="min-height:90px">${escapeHtml(c.body)}</textarea></label>
+      <div class="form-row">
+        <label class="fld"><span>Status</span>
+          <select id="f-status">
+            <option value="open" ${c.status==='open'?'selected':''}>Open — needs follow-up</option>
+            <option value="resolved" ${c.status==='resolved'?'selected':''}>Resolved</option>
+          </select>
+        </label>
+        <label class="fld"><span>Follow-up needed</span><input type="text" id="f-followup" value="${escapeHtml(c.followUp)}" placeholder="e.g. Reply by Friday"></label>
+      </div>
+    </div>
+  `;
+}
+
+function readCommForm() {
+  return {
+    date: document.getElementById('f-date').value,
+    with: document.getElementById('f-with').value.trim(),
+    channel: document.getElementById('f-channel').value,
+    subject: document.getElementById('f-subject').value.trim(),
+    body: document.getElementById('f-body').value.trim(),
+    status: document.getElementById('f-status').value,
+    followUp: document.getElementById('f-followup').value.trim()
+  };
+}
+
+/* ============================================================
+   BUDGET / CHANGE ORDERS
+============================================================ */
+function renderBudget() {
+  const budgetTotal = state.selections.reduce((s, it) => s + (it.cost || 0), 0);
+  const actualPaid = state.selections.reduce((s, it) => s + (it.actual || 0), 0);
+  const approvedCOs = state.changeOrders.filter(c => c.status === 'approved').reduce((s, c) => s + c.amount, 0);
+  const pendingCOs = state.changeOrders.filter(c => c.status === 'pending').reduce((s, c) => s + c.amount, 0);
+  const total = state.budget.total || 0;
+  const remainingToSpend = Math.max(0, budgetTotal - actualPaid) + approvedCOs;
+  const projected = actualPaid + remainingToSpend;
+  const variance = projected - total;
+  const paidPct = total ? Math.min(100, (actualPaid / total) * 100) : 0;
+  const remainingPct = total ? Math.min(100 - paidPct, (remainingToSpend / total) * 100) : 0;
+
+  // Category breakdown: budget vs actual
+  const byCat = {};
+  state.selections.forEach(s => {
+    if (!byCat[s.category]) byCat[s.category] = { budget: 0, actual: 0 };
+    byCat[s.category].budget += (s.cost || 0);
+    byCat[s.category].actual += (s.actual || 0);
+  });
+  const cats = Object.entries(byCat).sort((a,b) => b[1].budget - a[1].budget);
+
+  return `
+    <div class="page-head">
+      <div class="page-eyebrow">Where the money goes</div>
+      <h1 class="page-title"><em>Budget</em> &amp; change orders</h1>
+      <p class="page-desc">Track what you've actually paid vs. what's still budgeted, plus any change orders against your original total.</p>
+    </div>
+
+    <div class="section">
+      <div class="card" style="padding:24px">
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom:14px">
+          <div>
+            <div class="text-small text-muted" style="letter-spacing:0.1em; text-transform:uppercase; font-size:10px">Total budget</div>
+            <div style="font-family:var(--serif); font-size:24px; font-weight:500; letter-spacing:-0.02em; margin-top:4px">
+              <input type="number" id="budgetTotal" value="${total}" style="font:inherit; border:none; background:transparent; width:100%; padding:0; color:var(--ink)">
+            </div>
+          </div>
+          <div>
+            <div class="text-small text-muted" style="letter-spacing:0.1em; text-transform:uppercase; font-size:10px">Paid to date</div>
+            <div style="font-family:var(--serif); font-size:24px; font-weight:500; margin-top:4px">${fmtMoney(actualPaid)}</div>
+            <div class="text-small text-muted">${Math.round(paidPct)}% of budget</div>
+          </div>
+          <div>
+            <div class="text-small text-muted" style="letter-spacing:0.1em; text-transform:uppercase; font-size:10px">Remaining to spend</div>
+            <div style="font-family:var(--serif); font-size:24px; font-weight:500; margin-top:4px">${fmtMoney(remainingToSpend)}</div>
+            <div class="text-small text-muted">${approvedCOs ? `incl. ${fmtMoney(approvedCOs)} approved COs` : 'from current selections'}</div>
+          </div>
+          <div>
+            <div class="text-small text-muted" style="letter-spacing:0.1em; text-transform:uppercase; font-size:10px">Projected vs budget</div>
+            <div style="font-family:var(--serif); font-size:24px; font-weight:500; margin-top:4px; ${variance > 0 ? 'color:var(--rust)' : 'color:var(--moss)'}">${variance > 0 ? '+' : ''}${fmtMoney(variance)}</div>
+            <div class="text-small text-muted">${variance > 0 ? 'projected over' : 'projected under'}</div>
+          </div>
+        </div>
+        <div class="budget-bar" style="margin-top:18px">
+          <div class="budget-spent" style="width:${paidPct}%"></div>
+          <div class="budget-committed" style="width:${remainingPct}%"></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:11px; color:var(--ink-muted)">
+          <span><span style="display:inline-block;width:9px;height:9px;background:var(--accent);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Paid (${fmtMoney(actualPaid)})</span>
+          <span><span style="display:inline-block;width:9px;height:9px;background:var(--amber);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Remaining budget (${fmtMoney(remainingToSpend)})</span>
+          <span>${pendingCOs ? 'Pending COs: ' + fmtMoney(pendingCOs) : ''}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="section">
+        <div class="section-head">
+          <h2 class="section-title">By category — budget vs paid</h2>
+        </div>
+        <div class="card">
+          ${cats.length === 0 ? '<div class="empty"><div class="empty-desc">Add costs to selections to see breakdown</div></div>' :
+          `<table class="table">
+            <thead><tr><th>Category</th><th class="right">Budget</th><th class="right">Paid</th><th class="right">Variance</th></tr></thead>
+            <tbody>
+              ${cats.map(([cat, v]) => {
+                const catVar = v.actual - v.budget;
+                const hasActual = v.actual > 0;
+                const overBudget = catVar > 0 && hasActual;
+                return `<tr>
+                  <td style="font-weight:500">${escapeHtml(cat)}</td>
+                  <td class="right currency" data-label="Budget">${fmtMoney(v.budget)}</td>
+                  <td class="right currency" data-label="Paid">${hasActual ? fmtMoney(v.actual) : '<span class="text-muted">—</span>'}</td>
+                  <td class="right currency" data-label="Variance" style="${overBudget ? 'color:var(--rust); font-weight:500' : (catVar < 0 && hasActual ? 'color:var(--moss)' : 'color:var(--ink-muted)')}">
+                    ${hasActual ? (catVar === 0 ? '—' : (catVar > 0 ? '+' : '') + fmtMoney(catVar)) : '<span class="text-muted">—</span>'}
+                  </td>
+                </tr>`;
+              }).join('')}
+              <tr style="border-top:2px solid var(--rule)">
+                <td style="font-weight:600">Total</td>
+                <td class="right currency" data-label="Budget" style="font-weight:600">${fmtMoney(budgetTotal)}</td>
+                <td class="right currency" data-label="Paid" style="font-weight:600">${fmtMoney(actualPaid)}</td>
+                <td class="right currency" data-label="Variance" style="font-weight:600; ${actualPaid - budgetTotal > 0 ? 'color:var(--rust)' : ''}">
+                  ${actualPaid ? ((actualPaid - budgetTotal > 0 ? '+' : '') + fmtMoney(actualPaid - budgetTotal)) : '—'}
+                </td>
+              </tr>
+            </tbody>
+          </table>`}
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h2 class="section-title">Change orders</h2>
+          <button class="btn btn-sm" data-add="co">+ Add</button>
+        </div>
+        ${state.changeOrders.length === 0 ? '<div class="card"><div class="empty"><div class="empty-title">No change orders yet</div><div class="empty-desc">Add any work changes beyond the original estimate.</div></div></div>' :
+        `<div class="card">
+          <table class="table">
+            <tbody>
+              ${state.changeOrders.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(co => `
+                <tr>
+                  <td>
+                    <div style="font-weight:500; font-size:12px">${escapeHtml(co.number)} · ${fmtDate(co.date)}</div>
+                    <div class="text-small text-muted">${escapeHtml(co.description)}</div>
+                  </td>
+                  <td class="right">
+                    <div class="currency" style="font-weight:500">${fmtMoney(co.amount)}</div>
+                    <span class="badge b-${co.status}">${co.status}</span>
+                  </td>
+                  <td class="col-actions" style="width:60px">
+                    <button class="btn-icon-only" data-edit-co="${co.id}" title="Edit">✎</button>
+                    <button class="btn-icon-only" data-del-co="${co.id}" title="Delete">×</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>`}
+      </div>
+    </div>
+  `;
+}
+
+function coForm(item) {
+  const co = item || { number: 'CO-' + String(state.changeOrders.length + 1).padStart(3, '0'), date: new Date().toISOString().slice(0,10), description: '', amount: '', status: 'pending' };
+  return `
+    <div class="form-grid">
+      <div class="form-row-3">
+        <label class="fld"><span>CO Number</span><input type="text" id="f-number" value="${escapeHtml(co.number)}"></label>
+        <label class="fld"><span>Date</span><input type="date" id="f-date" value="${co.date}"></label>
+        <label class="fld"><span>Amount</span><input type="number" id="f-amount" value="${co.amount}"></label>
+      </div>
+      <label class="fld"><span>Description</span><textarea id="f-description">${escapeHtml(co.description)}</textarea></label>
+      <label class="fld"><span>Status</span>
+        <select id="f-status">
+          <option value="pending" ${co.status==='pending'?'selected':''}>Pending</option>
+          <option value="approved" ${co.status==='approved'?'selected':''}>Approved</option>
+          <option value="rejected" ${co.status==='rejected'?'selected':''}>Rejected</option>
+        </select>
+      </label>
+    </div>
+  `;
+}
+function readCoForm() {
+  return {
+    number: document.getElementById('f-number').value.trim(),
+    date: document.getElementById('f-date').value,
+    description: document.getElementById('f-description').value.trim(),
+    amount: Number(document.getElementById('f-amount').value) || 0,
+    status: document.getElementById('f-status').value
+  };
+}
+
+/* ============================================================
+   SCHEDULE
+============================================================ */
+function renderSchedule() {
+  const phases = state.schedule.slice().sort((a, b) => a.start.localeCompare(b.start));
+  return `
+    <div class="page-head">
+      <div class="page-eyebrow">Phases and milestones</div>
+      <h1 class="page-title">Build <em>schedule</em></h1>
+      <p class="page-desc">The phases of construction, with start and end dates, status, and notes.</p>
+    </div>
+
+    <div class="section-head">
+      <div></div>
+      <button class="btn" data-add="phase">+ Add phase</button>
+    </div>
+
+    <div class="card" style="padding:20px 24px">
+      <div class="timeline">
+        ${phases.map(p => `
+          <div class="timeline-item ${p.status}">
+            <div class="timeline-card">
+              <div style="display:flex; justify-content:space-between; align-items:start; gap:12px">
+                <div style="flex:1">
+                  <div class="timeline-date">${fmtDateLong(p.start)} — ${fmtDateLong(p.end)}</div>
+                  <div class="timeline-title">${escapeHtml(p.phase)}</div>
+                  ${p.notes ? `<div class="timeline-meta">${escapeHtml(p.notes)}</div>` : ''}
+                </div>
+                <div style="display:flex; gap:6px; align-items:center">
+                  <span class="badge b-on${p.status === 'current' ? 'schedule' : p.status}">${p.status}</span>
+                  <button class="btn-icon-only" data-edit-phase="${p.id}">✎</button>
+                  <button class="btn-icon-only" data-del-phase="${p.id}">×</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function phaseForm(item) {
+  const p = item || { phase: '', start: '', end: '', status: 'upcoming', notes: '' };
+  return `
+    <div class="form-grid">
+      <label class="fld"><span>Phase name</span><input type="text" id="f-phase" value="${escapeHtml(p.phase)}" placeholder="e.g. Insulation & drywall"></label>
+      <div class="form-row-3">
+        <label class="fld"><span>Start</span><input type="date" id="f-start" value="${p.start}"></label>
+        <label class="fld"><span>End</span><input type="date" id="f-end" value="${p.end}"></label>
+        <label class="fld"><span>Status</span>
+          <select id="f-status">
+            <option value="upcoming" ${p.status==='upcoming'?'selected':''}>Upcoming</option>
+            <option value="current" ${p.status==='current'?'selected':''}>Current</option>
+            <option value="complete" ${p.status==='complete'?'selected':''}>Complete</option>
+            <option value="delayed" ${p.status==='delayed'?'selected':''}>Delayed</option>
+          </select>
+        </label>
+      </div>
+      <label class="fld"><span>Notes</span><textarea id="f-notes">${escapeHtml(p.notes)}</textarea></label>
+    </div>
+  `;
+}
+function readPhaseForm() {
+  return {
+    phase: document.getElementById('f-phase').value.trim(),
+    start: document.getElementById('f-start').value,
+    end: document.getElementById('f-end').value,
+    status: document.getElementById('f-status').value,
+    notes: document.getElementById('f-notes').value.trim()
+  };
+}
+
+/* ============================================================
+   CONTACTS
+============================================================ */
+function renderContacts() {
+  return `
+    <div class="page-head">
+      <div class="page-eyebrow">Your team</div>
+      <h1 class="page-title"><em>Contacts</em></h1>
+      <p class="page-desc">Everyone working on your build — contractor, architect, trades, and designers.</p>
+    </div>
+
+    <div class="section-head">
+      <div></div>
+      <button class="btn" data-add="contact">+ Add contact</button>
+    </div>
+
+    ${state.contacts.length === 0 ? `
+      <div class="card"><div class="empty"><div class="empty-title">No contacts yet</div></div></div>
+    ` : `
+      <div class="card">
+        <table class="table">
+          <thead><tr>
+            <th>Name</th><th>Role</th><th>Company</th><th>Phone</th><th>Email</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${state.contacts.map(c => `
+              <tr>
+                <td style="font-weight:500">${escapeHtml(c.name)}</td>
+                <td class="text-small" data-label="Role">${escapeHtml(c.role)}</td>
+                <td class="text-small" data-label="Company">${escapeHtml(c.company)}</td>
+                <td class="text-small" data-label="Phone">${escapeHtml(c.phone)}</td>
+                <td class="text-small" data-label="Email">${escapeHtml(c.email)}</td>
+                <td class="col-actions">
+                  <button class="btn-icon-only" data-edit-contact="${c.id}">✎</button>
+                  <button class="btn-icon-only" data-del-contact="${c.id}">×</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `}
+  `;
+}
+
+function contactForm(item) {
+  const c = item || { name: '', role: '', company: '', phone: '', email: '' };
+  return `
+    <div class="form-grid">
+      <div class="form-row">
+        <label class="fld"><span>Name</span><input type="text" id="f-name" value="${escapeHtml(c.name)}"></label>
+        <label class="fld"><span>Role</span><input type="text" id="f-role" value="${escapeHtml(c.role)}" placeholder="e.g. General contractor"></label>
+      </div>
+      <label class="fld"><span>Company</span><input type="text" id="f-company" value="${escapeHtml(c.company)}"></label>
+      <div class="form-row">
+        <label class="fld"><span>Phone</span><input type="text" id="f-phone" value="${escapeHtml(c.phone)}"></label>
+        <label class="fld"><span>Email</span><input type="text" id="f-email" value="${escapeHtml(c.email)}"></label>
+      </div>
+    </div>
+  `;
+}
+function readContactForm() {
+  return {
+    name: document.getElementById('f-name').value.trim(),
+    role: document.getElementById('f-role').value.trim(),
+    company: document.getElementById('f-company').value.trim(),
+    phone: document.getElementById('f-phone').value.trim(),
+    email: document.getElementById('f-email').value.trim()
+  };
+}
+
+/* ============================================================
+   MODAL
+============================================================ */
+function openModal(title, html, onSave) {
+  const m = document.getElementById('modal');
+  m.innerHTML = `
+    <div class="modal-head">
+      <div class="modal-title">${escapeHtml(title)}</div>
+      <button class="modal-close" id="modalClose">×</button>
+    </div>
+    <div id="modalBody">${html}</div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="modalCancel">Cancel</button>
+      <button class="btn" id="modalSave">Save</button>
+    </div>
+  `;
+  document.getElementById('modalBackdrop').classList.add('show');
+  document.getElementById('modalClose').onclick = closeModal;
+  document.getElementById('modalCancel').onclick = closeModal;
+  document.getElementById('modalSave').onclick = async () => {
+    await onSave();
+    closeModal();
+  };
+}
+function closeModal() { document.getElementById('modalBackdrop').classList.remove('show'); }
+document.getElementById('modalBackdrop').addEventListener('click', e => {
+  if (e.target.id === 'modalBackdrop') closeModal();
+});
+
+/* ============================================================
+   EVENT BINDING PER VIEW
+============================================================ */
+function bindViewEvents(view) {
+  // Nav
+  document.getElementById('nav').onclick = e => {
+    const b = e.target.closest('.nav-btn');
+    if (b) setView(b.dataset.view);
+  };
+
+  // Generic add buttons
+  document.querySelectorAll('[data-add]').forEach(btn => {
+    btn.onclick = () => {
+      const type = btn.dataset.add;
+      if (type === 'selection') openModal('Add selection', selectionForm(), async () => {
+        const data = readSelectionForm();
+        if (!data.item) return;
+        state.selections.push({ id: uid(), ...data });
+        await saveState(); setView('selections'); showToast('Selection added');
+      });
+      if (type === 'comm') openModal('Log conversation', commForm(), async () => {
+        const data = readCommForm();
+        if (!data.subject && !data.with) return;
+        state.communications.push({ id: uid(), ...data });
+        await saveState(); setView('communications'); showToast('Conversation logged');
+      });
+      if (type === 'co') openModal('Add change order', coForm(), async () => {
+        const data = readCoForm();
+        state.changeOrders.push({ id: uid(), ...data });
+        await saveState(); setView('budget'); showToast('Change order added');
+      });
+      if (type === 'phase') openModal('Add phase', phaseForm(), async () => {
+        const data = readPhaseForm();
+        if (!data.phase) return;
+        state.schedule.push({ id: uid(), ...data });
+        await saveState(); setView('schedule'); showToast('Phase added');
+      });
+      if (type === 'contact') openModal('Add contact', contactForm(), async () => {
+        const data = readContactForm();
+        if (!data.name) return;
+        state.contacts.push({ id: uid(), ...data });
+        await saveState(); setView('contacts'); showToast('Contact added');
+      });
+    };
+  });
+
+  // ---- SELECTIONS ----
+  if (view === 'selections') {
+    document.querySelectorAll('[data-sel-status]').forEach(b => b.onclick = () => { selFilters.status = b.dataset.selStatus; setView('selections'); });
+    document.querySelectorAll('[data-sel-cat]').forEach(b => b.onclick = () => { selFilters.category = b.dataset.selCat; setView('selections'); });
+    const srch = document.getElementById('selSearch');
+    if (srch) {
+      let t;
+      srch.oninput = () => { clearTimeout(t); t = setTimeout(() => { selFilters.q = srch.value; setView('selections'); }, 250); };
+    }
+    document.querySelectorAll('[data-edit-sel]').forEach(b => b.onclick = () => {
+      const item = state.selections.find(s => s.id === b.dataset.editSel);
+      openModal('Edit selection', selectionForm(item), async () => {
+        Object.assign(item, readSelectionForm());
+        await saveState(); setView('selections'); showToast('Updated');
+      });
+    });
+    document.querySelectorAll('[data-del-sel]').forEach(b => b.onclick = async () => {
+      if (!confirm('Delete this selection?')) return;
+      state.selections = state.selections.filter(s => s.id !== b.dataset.delSel);
+      await saveState(); setView('selections'); showToast('Deleted');
+    });
+  }
+
+  // ---- COMMS ----
+  if (view === 'communications') {
+    document.querySelectorAll('[data-comm-status]').forEach(b => b.onclick = () => { commFilters.status = b.dataset.commStatus; setView('communications'); });
+    const srch = document.getElementById('commSearch');
+    if (srch) {
+      let t;
+      srch.oninput = () => { clearTimeout(t); t = setTimeout(() => { commFilters.q = srch.value; setView('communications'); }, 250); };
+    }
+    document.querySelectorAll('[data-edit-comm]').forEach(b => b.onclick = () => {
+      const item = state.communications.find(s => s.id === b.dataset.editComm);
+      openModal('Edit conversation', commForm(item), async () => {
+        Object.assign(item, readCommForm());
+        await saveState(); setView('communications'); showToast('Updated');
+      });
+    });
+    document.querySelectorAll('[data-del-comm]').forEach(b => b.onclick = async () => {
+      if (!confirm('Delete this entry?')) return;
+      state.communications = state.communications.filter(s => s.id !== b.dataset.delComm);
+      await saveState(); setView('communications'); showToast('Deleted');
+    });
+    document.querySelectorAll('[data-toggle-comm]').forEach(b => b.onclick = async () => {
+      const item = state.communications.find(c => c.id === b.dataset.toggleComm);
+      item.status = item.status === 'open' ? 'resolved' : 'open';
+      await saveState(); setView('communications');
+    });
+  }
+
+  // ---- BUDGET ----
+  if (view === 'budget') {
+    const inp = document.getElementById('budgetTotal');
+    if (inp) inp.onchange = async () => {
+      state.budget.total = Number(inp.value) || 0;
+      await saveState(); setView('budget'); showToast('Budget updated');
+    };
+    document.querySelectorAll('[data-edit-co]').forEach(b => b.onclick = () => {
+      const item = state.changeOrders.find(s => s.id === b.dataset.editCo);
+      openModal('Edit change order', coForm(item), async () => {
+        Object.assign(item, readCoForm());
+        await saveState(); setView('budget'); showToast('Updated');
+      });
+    });
+    document.querySelectorAll('[data-del-co]').forEach(b => b.onclick = async () => {
+      if (!confirm('Delete this change order?')) return;
+      state.changeOrders = state.changeOrders.filter(s => s.id !== b.dataset.delCo);
+      await saveState(); setView('budget'); showToast('Deleted');
+    });
+  }
+
+  // ---- SCHEDULE ----
+  if (view === 'schedule') {
+    document.querySelectorAll('[data-edit-phase]').forEach(b => b.onclick = () => {
+      const item = state.schedule.find(s => s.id === b.dataset.editPhase);
+      openModal('Edit phase', phaseForm(item), async () => {
+        Object.assign(item, readPhaseForm());
+        await saveState(); setView('schedule'); showToast('Updated');
+      });
+    });
+    document.querySelectorAll('[data-del-phase]').forEach(b => b.onclick = async () => {
+      if (!confirm('Delete this phase?')) return;
+      state.schedule = state.schedule.filter(s => s.id !== b.dataset.delPhase);
+      await saveState(); setView('schedule'); showToast('Deleted');
+    });
+  }
+
+  // ---- CONTACTS ----
+  if (view === 'contacts') {
+    document.querySelectorAll('[data-edit-contact]').forEach(b => b.onclick = () => {
+      const item = state.contacts.find(s => s.id === b.dataset.editContact);
+      openModal('Edit contact', contactForm(item), async () => {
+        Object.assign(item, readContactForm());
+        await saveState(); setView('contacts'); showToast('Updated');
+      });
+    });
+    document.querySelectorAll('[data-del-contact]').forEach(b => b.onclick = async () => {
+      if (!confirm('Delete this contact?')) return;
+      state.contacts = state.contacts.filter(s => s.id !== b.dataset.delContact);
+      await saveState(); setView('contacts'); showToast('Deleted');
+    });
+  }
+}
+
+/* ============================================================
+   EXPORT / IMPORT
+============================================================ */
+document.getElementById('exportBtn').onclick = () => {
+  const { view, ...persist } = state;
+  const blob = new Blob([JSON.stringify(persist, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'build-tracker-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Backup downloaded');
+};
+
+document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
+document.getElementById('importFile').onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!confirm('Importing will replace your current data. Continue?')) return;
+  const text = await file.text();
+  try {
+    const data = JSON.parse(text);
+    Object.assign(state, data);
+    await saveState();
+    setView(state.view || 'dashboard');
+    showToast('Imported successfully');
+  } catch (err) {
+    showToast('Could not read file');
+  }
+};
+
+/* ============================================================
+   MOBILE SIDEBAR DRAWER + BROWSER BACK BUTTON
+============================================================ */
+const sidebarEl = document.querySelector('.sidebar');
+const backdropEl = document.getElementById('sidebarBackdrop');
+const menuBtn = document.getElementById('mobileMenuBtn');
+
+function openDrawer() {
+  if (!sidebarEl) return;
+  sidebarEl.classList.add('open');
+  backdropEl.classList.add('show');
+  // Push a history state so the back button closes the drawer
+  history.pushState({ drawer: true }, '');
+}
+function closeDrawer() {
+  if (!sidebarEl) return;
+  sidebarEl.classList.remove('open');
+  backdropEl.classList.remove('show');
+}
+
+if (menuBtn) menuBtn.addEventListener('click', openDrawer);
+if (backdropEl) backdropEl.addEventListener('click', closeDrawer);
+
+// Close drawer whenever a nav button is tapped (after they navigate)
+document.getElementById('nav').addEventListener('click', (e) => {
+  if (e.target.closest('.nav-btn')) closeDrawer();
+});
+
+// Mobile FAB — triggers the Add modal for the current view by clicking
+// the hidden desktop "+ Add" button (which has the proper handler bound)
+const fabBtn = document.getElementById('mobileAddFAB');
+if (fabBtn) {
+  fabBtn.addEventListener('click', () => {
+    const addType = fabBtn.dataset.add;
+    if (!addType) return;
+    const target = document.querySelector(`[data-add="${addType}"]`);
+    if (target) target.click();
+  });
+}
+
+// Browser back button handling
+window.addEventListener('popstate', (e) => {
+  // If drawer is open, close it
+  if (sidebarEl && sidebarEl.classList.contains('open')) {
+    sidebarEl.classList.remove('open');
+    backdropEl.classList.remove('show');
+    return;
+  }
+  // Otherwise, navigate to the previous view based on history state
+  const targetView = (e.state && e.state.view) || 'dashboard';
+  if (targetView !== state.view) {
+    setView(targetView, true);  // skip pushState
+  }
+});
+
+/* ============================================================
+   GOOGLE SIGN-IN GATE
+============================================================ */
+// EDIT THIS LIST: emails of people allowed to access the tracker.
+// Must be lowercase. Add or remove people here, then re-upload the file to GitHub.
+const ALLOWED_EMAILS = [
+ 'angarcia1001@gmail.com',
+  'shawneeparkinson@gmail.com',
+  'jakehansen.builder@gmail.com',
+];
+
+let _currentUser = null;
+
+async function waitForFirebaseAuth() {
+  for (let i = 0; i < 50; i++) {
+    if (window._fb && window._fb.auth) return window._fb;
+    await new Promise(r => setTimeout(r, 100));
+  }
+  throw new Error('Firebase Auth failed to load');
+}
+
+function isAllowed(email) {
+  if (!email) return false;
+  // If the allowlist is empty, deny everyone — forces you to add emails before use
+  if (ALLOWED_EMAILS.length === 0) return false;
+  return ALLOWED_EMAILS.includes(email.toLowerCase());
+}
+
+function showGateError(msg) {
+  document.getElementById('gateErr').textContent = msg;
+}
+
+async function handleSignedIn(user) {
+  if (!isAllowed(user.email)) {
+    showGateError(`${user.email} is not authorized to access this tracker. Ask the owner to add you to the allowlist.`);
+    // Sign them out so they don't stay logged in to an unauthorized session
+    const fb = window._fb;
+    if (fb) await fb.signOut(fb.auth);
+    return;
+  }
+  _currentUser = user;
+  // Show signed-in info in sidebar
+  const tag = document.getElementById('signedInAs');
+  if (tag) tag.textContent = `Signed in as ${user.displayName || user.email}`;
+  // Show the app
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').style.display = 'grid';
+  // Load data and start syncing
+  await loadState();
+  setView('dashboard');
+}
+
+function handleSignedOut() {
+  _currentUser = null;
+  if (_unsubscribe) { _unsubscribe(); _unsubscribe = null; }
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('gate').style.display = 'flex';
+  // Clear any previous error
+  showGateError('');
+}
+
+// Wire up gate
+document.getElementById('gateGoogle').addEventListener('click', async () => {
+  showGateError('');
+  try {
+    const fb = await waitForFirebaseAuth();
+    await fb.signInWithPopup(fb.auth, fb.provider);
+    // onAuthStateChanged below picks up the sign-in
+  } catch (e) {
+    if (e.code === 'auth/popup-closed-by-user') {
+      // user cancelled, no message needed
+      return;
+    }
+    console.error('Sign-in error:', e);
+    showGateError('Sign-in failed: ' + (e.message || e.code || 'unknown error'));
+  }
+});
+
+document.getElementById('signoutBtn').addEventListener('click', async () => {
+  const fb = window._fb;
+  if (fb) await fb.signOut(fb.auth);
+});
+
+// Apply contractor branding (uses the BRANDING constant defined above)
+applyBranding();
+
+// Watch auth state and react
+(async () => {
+  const fb = await waitForFirebaseAuth();
+  fb.onAuthStateChanged(fb.auth, (user) => {
+    if (user) {
+      handleSignedIn(user);
+    } else {
+      handleSignedOut();
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
