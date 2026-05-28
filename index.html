@@ -358,6 +358,42 @@
   .details-row:last-child { border-bottom: none; }
   .details-label { color: var(--ink-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; padding-top: 2px; }
 
+  /* Nav badge — red pill with a count, appears on sidebar nav items
+     when the signed-in user has open assignments/communications */
+  .nav-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    margin-left: auto;
+    padding: 0 6px;
+    border-radius: 9px;
+    background: var(--rust);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+    font-family: var(--sans);
+    letter-spacing: 0;
+  }
+  /* Sidebar nav buttons need to flex so the badge can pin to the right */
+  .nav-btn { display: flex; align-items: center; gap: 10px; }
+  .nav-btn .nav-icon { flex-shrink: 0; }
+  .nav-btn .nav-badge { flex-shrink: 0; }
+
+  /* Mobile menu button dot — appears when there are any badged items */
+  .menu-badge-dot {
+    position: absolute;
+    top: 6px; right: 6px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--rust);
+    border: 1.5px solid var(--paper);
+    box-sizing: content-box;
+  }
+  #mobileMenuBtn { position: relative; }
+
   /* misc */
   /* Role-based visibility — applyRoleVisibility() sets body class.
      Elements marked [data-admin-only] are hidden until role is confirmed. */
@@ -890,6 +926,8 @@ function subscribeToRemoteChanges() {
     document.getElementById('main').innerHTML = fn();
     bindViewEvents(state.view);
     _isApplyingRemote = false;
+    // Refresh nav badges after remote sync (someone else may have changed assignments)
+    updateNavBadges();
     // Subtle indicator that data refreshed from cloud
     const ind = document.getElementById('syncIndicator');
     if (ind) {
@@ -1213,6 +1251,8 @@ function setView(view, skipHistory) {
   if (!skipHistory) {
     history.pushState({ view }, '', '#' + view);
   }
+  // Refresh nav badges (counts of open items assigned to current user)
+  updateNavBadges();
 }
 
 /* ============================================================
@@ -1607,11 +1647,13 @@ function renderCommunications() {
       </div></div>
     ` : `
       <div class="comm-list">
-        ${items.map(c => `
+        ${items.map(c => {
+          const assigneeName = c.assignedTo ? getUserDisplayName(c.assignedTo) : '';
+          return `
           <div class="comm-card ${c.status === 'open' ? '' : 'resolved'}">
             <div class="comm-head">
               <div style="flex:1; min-width:0">
-                <div class="comm-meta"><span class="comm-with">${escapeHtml(c.with)}</span> · ${escapeHtml(c.channel)} · ${fmtDate(c.date)}</div>
+                <div class="comm-meta"><span class="comm-with">${escapeHtml(c.with)}</span> · ${escapeHtml(c.channel)} · ${fmtDate(c.date)}${assigneeName ? ` · <span style="color:var(--ink-soft)">assigned to ${escapeHtml(assigneeName)}</span>` : ''}</div>
                 <div class="comm-subject">${escapeHtml(c.subject)}</div>
                 <div class="comm-body">${escapeHtml(c.body)}</div>
                 ${c.followUp ? `<div class="comm-action">↳ ${escapeHtml(c.followUp)}</div>` : ''}
@@ -1626,15 +1668,22 @@ function renderCommunications() {
               </div>
             </div>
           </div>
-        `).join('')}
+        `}).join('')}
       </div>
     `}
   `;
 }
 
 function commForm(item) {
-  const c = item || { date: new Date().toISOString().slice(0,10), with: '', channel: 'email', subject: '', body: '', status: 'open', followUp: '' };
+  const c = item || { date: new Date().toISOString().slice(0,10), with: '', channel: 'email', subject: '', body: '', status: 'open', followUp: '', assignedTo: '' };
   const contacts = state.contacts.map(c => c.name);
+  // Build assignable user options — admin-only field, but everyone sees who's assigned
+  const users = getAssignableUsers();
+  const canAssign = _currentRole === 'admin';
+  const assigneeOptions = users.map(u => {
+    const label = u.displayName ? `${u.displayName} (${u.email})` : u.email;
+    return `<option value="${escapeHtml(u.email)}" ${c.assignedTo === u.email ? 'selected' : ''}>${escapeHtml(label)}</option>`;
+  }).join('');
   return `
     <div class="form-grid">
       <div class="form-row-3">
@@ -1660,12 +1709,22 @@ function commForm(item) {
         </label>
         <label class="fld"><span>Follow-up needed</span><input type="text" id="f-followup" value="${escapeHtml(c.followUp)}" placeholder="e.g. Reply by Friday"></label>
       </div>
+      <label class="fld"><span>Assigned to ${canAssign ? '' : '<span class="text-small text-muted">(admin only)</span>'}</span>
+        <select id="f-assignedTo" ${canAssign ? '' : 'disabled style="background:var(--rule-soft); cursor:not-allowed"'}>
+          <option value="" ${!c.assignedTo ? 'selected' : ''}>— Unassigned —</option>
+          ${assigneeOptions}
+        </select>
+      </label>
     </div>
   `;
 }
 
 function readCommForm() {
-  return {
+  // Only read assignedTo if the field is enabled (admin only).
+  // Otherwise preserve whatever was previously stored.
+  const assignedToEl = document.getElementById('f-assignedTo');
+  const assignedTo = assignedToEl && !assignedToEl.disabled ? assignedToEl.value : undefined;
+  const result = {
     date: document.getElementById('f-date').value,
     with: document.getElementById('f-with').value.trim(),
     channel: document.getElementById('f-channel').value,
@@ -1674,6 +1733,8 @@ function readCommForm() {
     status: document.getElementById('f-status').value,
     followUp: document.getElementById('f-followup').value.trim()
   };
+  if (assignedTo !== undefined) result.assignedTo = assignedTo;
+  return result;
 }
 
 /* ============================================================
@@ -2504,6 +2565,72 @@ function getUserDisplayName(email) {
   }
   if (BOOTSTRAP_ADMINS.includes(e)) return 'Admin';
   return email;
+}
+
+// Count open/pending items assigned to the currently signed-in user.
+// Used by the nav badges. Returns { selections, communications, total }.
+function getBadgeCounts() {
+  if (!_currentUser) return { selections: 0, communications: 0, total: 0 };
+  const myEmail = _currentUser.email.toLowerCase();
+  const selCount = (state.selections || []).filter(s =>
+    (s.assignedTo || '').toLowerCase() === myEmail &&
+    s.status !== 'installed'
+  ).length;
+  const commCount = (state.communications || []).filter(c =>
+    (c.assignedTo || '').toLowerCase() === myEmail &&
+    c.status === 'open'
+  ).length;
+  return { selections: selCount, communications: commCount, total: selCount + commCount };
+}
+
+// Render badge counts into the sidebar nav items. Called after every render
+// or state change so badges stay in sync.
+function updateNavBadges() {
+  const counts = getBadgeCounts();
+  // Selections nav badge
+  const selBtn = document.querySelector('.nav-btn[data-view="selections"]');
+  if (selBtn) {
+    let badge = selBtn.querySelector('.nav-badge');
+    if (counts.selections > 0) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'nav-badge';
+        selBtn.appendChild(badge);
+      }
+      badge.textContent = counts.selections;
+    } else if (badge) {
+      badge.remove();
+    }
+  }
+  // Communications nav badge
+  const commBtn = document.querySelector('.nav-btn[data-view="communications"]');
+  if (commBtn) {
+    let badge = commBtn.querySelector('.nav-badge');
+    if (counts.communications > 0) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'nav-badge';
+        commBtn.appendChild(badge);
+      }
+      badge.textContent = counts.communications;
+    } else if (badge) {
+      badge.remove();
+    }
+  }
+  // Mobile hamburger dot — shows if either source has badges
+  const menuBtn = document.getElementById('mobileMenuBtn');
+  if (menuBtn) {
+    let dot = menuBtn.querySelector('.menu-badge-dot');
+    if (counts.total > 0) {
+      if (!dot) {
+        dot = document.createElement('span');
+        dot.className = 'menu-badge-dot';
+        menuBtn.appendChild(dot);
+      }
+    } else if (dot) {
+      dot.remove();
+    }
+  }
 }
 
 function isAllowed(email) {
