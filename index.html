@@ -1247,6 +1247,17 @@ function renderDashboard() {
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 4);
 
+  // Your assignments — pending selections assigned to the current signed-in user
+  const myEmail = _currentUser ? _currentUser.email.toLowerCase() : '';
+  const myAssignments = myEmail ? state.selections
+    .filter(s => (s.assignedTo || '').toLowerCase() === myEmail && s.status !== 'installed')
+    .sort((a, b) => (a.deadline || '9999').localeCompare(b.deadline || '9999'))
+    .slice(0, 6) : [];
+  const myOverdueCount = myAssignments.filter(s => {
+    const dd = daysFromNow(s.deadline);
+    return dd !== null && dd < 0;
+  }).length;
+
   return `
     <div class="page-head">
       <div class="page-eyebrow">Mid-build · Garcia estimate</div>
@@ -1284,6 +1295,38 @@ function renderDashboard() {
     ${overItems.length > 0 ? `
       <div class="note">
         <strong>Heads up — ${overItems.length} line items are over budget</strong> totaling <strong>${fmtMoney(totalOver)}</strong>: ${overItems.slice(0, 4).map(s => escapeHtml(s.item)).join(', ')}${overItems.length > 4 ? '…' : ''}. Check the budget tab for full breakdown.
+      </div>
+    ` : ''}
+
+    ${myAssignments.length > 0 ? `
+      <div class="section">
+        <div class="section-head">
+          <h2 class="section-title">Your assignments${myOverdueCount > 0 ? ` <span class="badge b-urgent" style="margin-left:8px; vertical-align:middle">${myOverdueCount} overdue</span>` : ''}</h2>
+          <button class="btn btn-ghost btn-sm" onclick="selFilters.assignedToMe = true; setView('selections')">View all →</button>
+        </div>
+        <div class="card">
+          <table class="table">
+            <tbody>
+              ${myAssignments.map(s => {
+                const dd = daysFromNow(s.deadline);
+                const overdue = dd !== null && dd < 0;
+                const urgent = !overdue && dd !== null && dd <= 7;
+                return `<tr>
+                  <td>
+                    <div style="font-weight:500">${escapeHtml(s.item)}</div>
+                    <div class="text-small text-muted">${escapeHtml(s.category)} · <span class="badge b-${s.status}" style="vertical-align:middle">${s.status}</span></div>
+                  </td>
+                  <td class="right">
+                    ${s.deadline ? `
+                      <div class="text-small ${overdue ? '' : ''}" style="font-weight:500; ${overdue ? 'color:var(--rust)' : ''}">${fmtDate(s.deadline)}</div>
+                      <div class="text-small ${overdue ? '' : 'text-muted'}" style="${overdue ? 'color:var(--rust); font-weight:500' : ''}">${overdue ? `${-dd}d overdue` : urgent ? `due in ${dd}d` : `in ${dd}d`}</div>
+                    ` : '<span class="text-muted text-small">no deadline</span>'}
+                  </td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>
     ` : ''}
 
@@ -1373,15 +1416,19 @@ function renderMiniTimeline() {
 /* ============================================================
    SELECTIONS VIEW
 ============================================================ */
-let selFilters = { status: 'all', category: 'all', q: '' };
+let selFilters = { status: 'all', category: 'all', q: '', assignedToMe: false };
 
 function renderSelections() {
   const cats = ['all', ...new Set(state.selections.map(s => s.category))];
   const statuses = ['all', 'pending', 'decided', 'ordered', 'installed'];
+  const myEmail = _currentUser ? _currentUser.email.toLowerCase() : '';
 
   let items = state.selections.slice();
   if (selFilters.status !== 'all') items = items.filter(s => s.status === selFilters.status);
   if (selFilters.category !== 'all') items = items.filter(s => s.category === selFilters.category);
+  if (selFilters.assignedToMe && myEmail) {
+    items = items.filter(s => (s.assignedTo || '').toLowerCase() === myEmail);
+  }
   if (selFilters.q) {
     const q = selFilters.q.toLowerCase();
     items = items.filter(s => (s.item + ' ' + s.choice + ' ' + s.vendor + ' ' + s.notes).toLowerCase().includes(q));
@@ -1398,6 +1445,7 @@ function renderSelections() {
     <div class="section-head">
       <div class="filter-row">
         ${statuses.map(s => `<button class="filter-chip ${selFilters.status===s?'active':''}" data-sel-status="${s}">${s}</button>`).join('')}
+        <button class="filter-chip ${selFilters.assignedToMe?'active':''}" data-sel-assigned-me="1">assigned to me</button>
       </div>
       <button class="btn" data-add="selection"><span>+</span> Add selection</button>
     </div>
@@ -1416,7 +1464,7 @@ function renderSelections() {
       <div class="card">
         <table class="table">
           <thead><tr>
-            <th>Item</th><th>Vendor / Choice</th><th class="right">Budget</th><th class="right">Paid</th><th class="right">Variance</th><th>Status</th><th></th>
+            <th>Item</th><th>Vendor / Choice</th><th class="right">Budget</th><th class="right">Paid</th><th class="right">Variance</th><th>Assigned</th><th>Status</th><th></th>
           </tr></thead>
           <tbody>
             ${items.map(s => {
@@ -1424,6 +1472,7 @@ function renderSelections() {
               const overBudget = variance > 0 && s.actual > 0;
               const dd = daysFromNow(s.deadline);
               const urgent = s.status === 'pending' && dd !== null && dd <= 7;
+              const assigneeName = s.assignedTo ? getUserDisplayName(s.assignedTo) : '';
               return `<tr>
                 <td>
                   <div style="font-weight:500">${escapeHtml(s.item)}</div>
@@ -1440,6 +1489,7 @@ function renderSelections() {
                 <td class="currency right ${overBudget ? '' : ''}" data-label="Variance" style="${overBudget ? 'color:var(--rust); font-weight:500' : (variance < 0 ? 'color:var(--moss)' : 'color:var(--ink-muted)')}">
                   ${s.actual ? (variance === 0 ? '—' : (variance > 0 ? '+' : '') + fmtMoney(variance)) : '<span class="text-muted">—</span>'}
                 </td>
+                <td class="text-small" data-label="Assigned">${assigneeName ? escapeHtml(assigneeName) : '<span class="text-muted">—</span>'}</td>
                 <td><span class="badge b-${s.status}">${s.status}</span></td>
                 <td class="col-actions">
                   <button class="btn-icon-only" data-edit-sel="${s.id}" title="Edit">✎</button>
@@ -1455,7 +1505,14 @@ function renderSelections() {
 }
 
 function selectionForm(item) {
-  const s = item || { category: '', item: '', status: 'pending', vendor: '', choice: '', cost: '', actual: '', deadline: '', notes: '' };
+  const s = item || { category: '', item: '', status: 'pending', vendor: '', choice: '', cost: '', actual: '', deadline: '', notes: '', assignedTo: '' };
+  // Build assignable user options (admin-only feature, but show field to all so they can see who's assigned)
+  const users = getAssignableUsers();
+  const canAssign = _currentRole === 'admin';
+  const assigneeOptions = users.map(u => {
+    const label = u.displayName ? `${u.displayName} (${u.email})` : u.email;
+    return `<option value="${escapeHtml(u.email)}" ${s.assignedTo === u.email ? 'selected' : ''}>${escapeHtml(label)}</option>`;
+  }).join('');
   return `
     <div class="form-grid">
       <div class="form-row">
@@ -1481,13 +1538,23 @@ function selectionForm(item) {
         </label>
         <label class="fld"><span>Deadline</span><input type="date" id="f-deadline" value="${s.deadline||''}"></label>
       </div>
+      <label class="fld"><span>Assigned to ${canAssign ? '' : '<span class="text-small text-muted">(admin only)</span>'}</span>
+        <select id="f-assignedTo" ${canAssign ? '' : 'disabled style="background:var(--rule-soft); cursor:not-allowed"'}>
+          <option value="" ${!s.assignedTo ? 'selected' : ''}>— Unassigned —</option>
+          ${assigneeOptions}
+        </select>
+      </label>
       <label class="fld"><span>Notes</span><textarea id="f-notes">${escapeHtml(s.notes)}</textarea></label>
     </div>
   `;
 }
 
 function readSelectionForm() {
-  return {
+  // Only read assignedTo if the field exists and is enabled (admin only).
+  // Otherwise preserve whatever was previously stored.
+  const assignedToEl = document.getElementById('f-assignedTo');
+  const assignedTo = assignedToEl && !assignedToEl.disabled ? assignedToEl.value : undefined;
+  const result = {
     category: document.getElementById('f-category').value.trim() || 'General',
     item: document.getElementById('f-item').value.trim(),
     choice: document.getElementById('f-choice').value.trim(),
@@ -1498,6 +1565,8 @@ function readSelectionForm() {
     deadline: document.getElementById('f-deadline').value,
     notes: document.getElementById('f-notes').value.trim()
   };
+  if (assignedTo !== undefined) result.assignedTo = assignedTo;
+  return result;
 }
 
 /* ============================================================
@@ -2161,6 +2230,7 @@ function bindViewEvents(view) {
   if (view === 'selections') {
     document.querySelectorAll('[data-sel-status]').forEach(b => b.onclick = () => { selFilters.status = b.dataset.selStatus; setView('selections'); });
     document.querySelectorAll('[data-sel-cat]').forEach(b => b.onclick = () => { selFilters.category = b.dataset.selCat; setView('selections'); });
+    document.querySelectorAll('[data-sel-assigned-me]').forEach(b => b.onclick = () => { selFilters.assignedToMe = !selFilters.assignedToMe; setView('selections'); });
     const srch = document.getElementById('selSearch');
     if (srch) {
       let t;
@@ -2356,9 +2426,11 @@ window.addEventListener('popstate', (e) => {
 // NOTE: This is now a fallback only — preferred way to manage users is via the
 // in-app Users view (admin only). This list is checked if Firestore is empty.
 const ALLOWED_EMAILS = [
-  'angarcia1001@gmail.com',
-  'shawneeparkinson@gmail.com',
-  'jakehansen.builder@gmail.com',
+  // Add the Google email addresses of your build team here, one per line, in quotes:
+  // 'you@gmail.com',
+  // 'yourspouse@gmail.com',
+  // 'builder@gmail.com',
+  // 'designer@gmail.com',
 ];
 
 // BOOTSTRAP_ADMINS: emails that ALWAYS have admin access, no matter what.
@@ -2400,6 +2472,38 @@ function getUserRole(email) {
   // via the Users view instead.
   if (ALLOWED_EMAILS.includes(e)) return 'admin';
   return null;
+}
+
+// Return list of all users who can have things assigned to them.
+// Includes bootstrap admins (always admin role) and everyone in state.users.
+function getAssignableUsers() {
+  const list = [];
+  // Bootstrap admins
+  BOOTSTRAP_ADMINS.forEach(email => {
+    list.push({ email: email.toLowerCase(), role: 'admin', displayName: 'Admin' });
+  });
+  // Firestore users
+  if (state.users) {
+    Object.entries(state.users).forEach(([email, u]) => {
+      // Avoid duplicates if a bootstrap admin is also in state.users
+      if (BOOTSTRAP_ADMINS.includes(email.toLowerCase())) return;
+      list.push({ email: email.toLowerCase(), role: u.role || 'client', displayName: u.displayName || '' });
+    });
+  }
+  // Sort by display name, then email
+  list.sort((a, b) => (a.displayName || a.email).localeCompare(b.displayName || b.email));
+  return list;
+}
+
+// Get the display name for an email — falls back to email if no name set.
+function getUserDisplayName(email) {
+  if (!email) return '';
+  const e = email.toLowerCase();
+  if (state.users && state.users[e] && state.users[e].displayName) {
+    return state.users[e].displayName;
+  }
+  if (BOOTSTRAP_ADMINS.includes(e)) return 'Admin';
+  return email;
 }
 
 function isAllowed(email) {
