@@ -359,6 +359,9 @@
   .details-label { color: var(--ink-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; padding-top: 2px; }
 
   /* misc */
+  /* Role-based visibility — applyRoleVisibility() sets body class.
+     Elements marked [data-admin-only] are hidden until role is confirmed. */
+  body:not(.role-admin) [data-admin-only] { display: none !important; }
   .currency { font-family: var(--mono); font-size: 12px; }
   .text-muted { color: var(--ink-muted); }
   .text-small { font-size: 12px; }
@@ -750,6 +753,8 @@
       <button class="nav-btn" data-view="budget"><span class="nav-icon">$</span>Budget &amp; Change Orders</button>
       <button class="nav-btn" data-view="schedule"><span class="nav-icon">◷</span>Schedule</button>
       <button class="nav-btn" data-view="contacts"><span class="nav-icon">☺</span>Contacts</button>
+      <div class="nav-section" data-admin-only style="display:none;">Admin</div>
+      <button class="nav-btn" data-view="users" data-admin-only style="display:none;"><span class="nav-icon">⚙</span>Users</button>
     </nav>
     <div class="sidebar-footer">
       <div id="signedInAs" style="font-size:11px; color:var(--ink-muted); margin-bottom:8px; word-break:break-all;"></div>
@@ -829,6 +834,7 @@ const state = {
   changeOrders: [],
   schedule: [],
   contacts: [],
+  users: {},   // email → { role, displayName, addedBy, addedAt }
   budget: { total: 0, spent: 0 },
   view: 'dashboard'
 };
@@ -931,8 +937,8 @@ function uid() { return Date.now().toString(36) + Math.random().toString(36).sli
    repo (e.g. 'logo.png'), or use a full https URL to a hosted image.
 ============================================================ */
 const BRANDING = {
-  name: 'Hansen Construction',      // e.g. 'Garcia Construction' — leave blank for default 'build·tracker'
-  tagline: 'Your Home, Organized',   // e.g. 'building dream homes since 1998' — leave blank for default
+  name: '',      // e.g. 'Garcia Construction' — leave blank for default 'build·tracker'
+  tagline: '',   // e.g. 'building dream homes since 1998' — leave blank for default
   logoUrl: ''    // e.g. 'logo.png' or 'https://example.com/logo.png'
 };
 
@@ -1155,7 +1161,8 @@ const VIEWS = {
   communications: renderCommunications,
   budget: renderBudget,
   schedule: renderSchedule,
-  contacts: renderContacts
+  contacts: renderContacts,
+  users: renderUsers
 };
 
 const VIEW_TITLES = {
@@ -1164,7 +1171,8 @@ const VIEW_TITLES = {
   communications: 'Communications',
   budget: 'Budget',
   schedule: 'Schedule',
-  contacts: 'Contacts'
+  contacts: 'Contacts',
+  users: 'Users'
 };
 
 // Mobile FAB — which "Add" action each view exposes (null = no FAB)
@@ -1174,7 +1182,8 @@ const VIEW_FAB = {
   communications: { add: 'comm', label: 'Log conversation' },
   budget: { add: 'co', label: 'Add change order' },
   schedule: { add: 'phase', label: 'Add phase' },
-  contacts: { add: 'contact', label: 'Add contact' }
+  contacts: { add: 'contact', label: 'Add contact' },
+  users: { add: 'user', label: 'Add user' }
 };
 
 function setView(view, skipHistory) {
@@ -1910,6 +1919,115 @@ function readContactForm() {
 }
 
 /* ============================================================
+   USERS VIEW (admin only)
+============================================================ */
+function renderUsers() {
+  // Safety: redirect non-admins
+  if (_currentRole !== 'admin') {
+    return `
+      <div class="page-head">
+        <div class="page-eyebrow">Restricted</div>
+        <h1 class="page-title">Admin only</h1>
+        <p class="page-desc">This view is available to admins only.</p>
+      </div>
+    `;
+  }
+
+  // Build the user list — combine bootstrap admins (read-only) with Firestore users
+  const bootstrapList = BOOTSTRAP_ADMINS.map(email => ({
+    email, role: 'admin', displayName: 'Bootstrap admin', addedBy: '(hardcoded)', addedAt: '', _bootstrap: true
+  }));
+  const storedList = Object.entries(state.users || {}).map(([email, u]) => ({
+    email, ...u, _bootstrap: false
+  }));
+  const all = [...bootstrapList, ...storedList].sort((a, b) => a.email.localeCompare(b.email));
+
+  const roleBadge = (role) => {
+    const colors = { admin: 'b-installed', client: 'b-decided', sub: 'b-ordered' };
+    return `<span class="badge ${colors[role] || 'b-upcoming'}">${role}</span>`;
+  };
+
+  return `
+    <div class="page-head">
+      <div class="page-eyebrow">Access control</div>
+      <h1 class="page-title"><em>Users</em> &amp; roles</h1>
+      <p class="page-desc">People who can access this tracker. Admins can edit anything. Clients and subs have limited editing permissions (rolling out gradually).</p>
+    </div>
+
+    <div class="section-head">
+      <div></div>
+      <button class="btn" data-add="user">+ Add user</button>
+    </div>
+
+    ${all.length === 0 ? `
+      <div class="card"><div class="empty">
+        <div class="empty-title">No users yet</div>
+        <div class="empty-desc">Add your first user to grant them access.</div>
+      </div></div>
+    ` : `
+      <div class="card">
+        <table class="table">
+          <thead><tr>
+            <th>Email</th><th>Name</th><th>Role</th><th>Added</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${all.map(u => `
+              <tr>
+                <td style="font-weight:500; word-break:break-all">${escapeHtml(u.email)}${u._bootstrap ? ' <span class="text-small text-muted">(bootstrap)</span>' : ''}</td>
+                <td class="text-small" data-label="Name">${escapeHtml(u.displayName || '—')}</td>
+                <td data-label="Role">${roleBadge(u.role)}</td>
+                <td class="text-small" data-label="Added">${u.addedAt ? fmtDate(u.addedAt.slice(0,10)) : '—'}${u.addedBy ? `<div class="text-small text-muted">by ${escapeHtml(u.addedBy)}</div>` : ''}</td>
+                <td class="col-actions">
+                  ${u._bootstrap ? '<span class="text-small text-muted">locked</span>' : `
+                    <button class="btn-icon-only" data-edit-user="${escapeHtml(u.email)}" title="Edit">✎</button>
+                    <button class="btn-icon-only" data-del-user="${escapeHtml(u.email)}" title="Remove">×</button>
+                  `}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `}
+
+    <div class="note" style="margin-top:20px">
+      <strong>About roles:</strong> Admins (typically the contractor) can edit everything. Clients (homeowners) can view all data and currently can edit most fields — restricted editing is being rolled out gradually. Subs (subcontractors) will eventually only see/edit items assigned to them.
+    </div>
+  `;
+}
+
+function userForm(item) {
+  const u = item || { email: '', displayName: '', role: 'client' };
+  const isEdit = !!item;
+  return `
+    <div class="form-grid">
+      <label class="fld"><span>Email</span>
+        <input type="text" id="f-email" value="${escapeHtml(u.email)}" placeholder="user@gmail.com" ${isEdit ? 'readonly style="background:var(--rule-soft); cursor:not-allowed"' : ''}>
+        <div class="text-small text-muted" style="margin-top:4px">Must be a Google account. User signs in via Google Sign-In.</div>
+      </label>
+      <label class="fld"><span>Display name (optional)</span>
+        <input type="text" id="f-displayName" value="${escapeHtml(u.displayName || '')}" placeholder="e.g. Jane Smith">
+      </label>
+      <label class="fld"><span>Role</span>
+        <select id="f-role">
+          <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin — full edit access</option>
+          <option value="client" ${u.role === 'client' ? 'selected' : ''}>Client — homeowner</option>
+          <option value="sub" ${u.role === 'sub' ? 'selected' : ''}>Sub — subcontractor</option>
+        </select>
+      </label>
+    </div>
+  `;
+}
+
+function readUserForm() {
+  return {
+    email: document.getElementById('f-email').value.trim().toLowerCase(),
+    displayName: document.getElementById('f-displayName').value.trim(),
+    role: document.getElementById('f-role').value
+  };
+}
+
+/* ============================================================
    MODAL
 ============================================================ */
 function openModal(title, html, onSave) {
@@ -1981,8 +2099,63 @@ function bindViewEvents(view) {
         state.contacts.push({ id: uid(), ...data });
         await saveState(); setView('contacts'); showToast('Contact added');
       });
+      if (type === 'user') {
+        if (_currentRole !== 'admin') { showToast('Admin only'); return; }
+        openModal('Add user', userForm(), async () => {
+          const data = readUserForm();
+          if (!data.email || !data.email.includes('@')) { showToast('Valid email required'); return; }
+          if (state.users && state.users[data.email]) { showToast('User already exists'); return; }
+          if (!state.users) state.users = {};
+          state.users[data.email] = {
+            role: data.role,
+            displayName: data.displayName,
+            addedBy: _currentUser ? _currentUser.email : 'system',
+            addedAt: new Date().toISOString()
+          };
+          await saveState(); setView('users'); showToast('User added');
+        });
+      }
     };
   });
+
+  // ---- USERS ----
+  if (view === 'users') {
+    document.querySelectorAll('[data-edit-user]').forEach(b => b.onclick = () => {
+      if (_currentRole !== 'admin') return;
+      const email = b.dataset.editUser;
+      const u = state.users[email];
+      if (!u) return;
+      openModal('Edit user', userForm({ email, ...u }), async () => {
+        const data = readUserForm();
+        state.users[email] = {
+          ...state.users[email],
+          role: data.role,
+          displayName: data.displayName
+        };
+        await saveState();
+        // If the edited user is the current user, re-apply role visibility
+        if (_currentUser && _currentUser.email.toLowerCase() === email) {
+          _currentRole = data.role;
+          applyRoleVisibility();
+        }
+        setView('users'); showToast('User updated');
+      });
+    });
+    document.querySelectorAll('[data-del-user]').forEach(b => b.onclick = async () => {
+      if (_currentRole !== 'admin') return;
+      const email = b.dataset.delUser;
+      // Safety: don't let admin remove themselves
+      if (_currentUser && _currentUser.email.toLowerCase() === email) {
+        if (!confirm('You are removing your OWN access. You will be signed out and only bootstrap admins can sign in. Continue?')) return;
+      } else if (!confirm(`Remove ${email}? They will lose access on their next sign-in.`)) {
+        return;
+      }
+      delete state.users[email];
+      await saveState();
+      setView('users');
+      showToast('User removed');
+    });
+  }
 
   // ---- SELECTIONS ----
   if (view === 'selections') {
@@ -2180,13 +2353,27 @@ window.addEventListener('popstate', (e) => {
 ============================================================ */
 // EDIT THIS LIST: emails of people allowed to access the tracker.
 // Must be lowercase. Add or remove people here, then re-upload the file to GitHub.
+// NOTE: This is now a fallback only — preferred way to manage users is via the
+// in-app Users view (admin only). This list is checked if Firestore is empty.
 const ALLOWED_EMAILS = [
- 'angarcia1001@gmail.com',
+  'angarcia1001@gmail.com',
   'shawneeparkinson@gmail.com',
   'jakehansen.builder@gmail.com',
 ];
 
+// BOOTSTRAP_ADMINS: emails that ALWAYS have admin access, no matter what.
+// This is your safety net — even if the Firestore user list is corrupted or
+// emptied, anyone in this list can sign in and fix it. Keep this list small
+// (just yourself, or maybe one trusted backup) and lowercase.
+const BOOTSTRAP_ADMINS = [
+  // 'angarcia1001@gmail.com',  // <-- Add your email here to ensure you can always sign in
+];
+
+// Valid role values
+const ROLES = ['admin', 'client', 'sub'];
+
 let _currentUser = null;
+let _currentRole = null;  // 'admin', 'client', or 'sub' — set on sign-in
 
 async function waitForFirebaseAuth() {
   for (let i = 0; i < 50; i++) {
@@ -2196,11 +2383,27 @@ async function waitForFirebaseAuth() {
   throw new Error('Firebase Auth failed to load');
 }
 
+// Look up a user's role from Firestore (if state has loaded), bootstrap list,
+// or legacy ALLOWED_EMAILS. Returns 'admin', 'client', 'sub', or null if denied.
+function getUserRole(email) {
+  if (!email) return null;
+  const e = email.toLowerCase();
+  // Bootstrap admins always win
+  if (BOOTSTRAP_ADMINS.includes(e)) return 'admin';
+  // Check Firestore-backed user map (loaded into state.users by loadState)
+  if (state.users && state.users[e]) {
+    const r = state.users[e].role;
+    return ROLES.includes(r) ? r : 'client';
+  }
+  // Fallback: legacy ALLOWED_EMAILS — treats anyone in that list as 'admin'
+  // since the original app had no role concept. New users should be added
+  // via the Users view instead.
+  if (ALLOWED_EMAILS.includes(e)) return 'admin';
+  return null;
+}
+
 function isAllowed(email) {
-  if (!email) return false;
-  // If the allowlist is empty, deny everyone — forces you to add emails before use
-  if (ALLOWED_EMAILS.length === 0) return false;
-  return ALLOWED_EMAILS.includes(email.toLowerCase());
+  return getUserRole(email) !== null;
 }
 
 function showGateError(msg) {
@@ -2208,27 +2411,51 @@ function showGateError(msg) {
 }
 
 async function handleSignedIn(user) {
-  if (!isAllowed(user.email)) {
-    showGateError(`${user.email} is not authorized to access this tracker. Ask the owner to add you to the allowlist.`);
-    // Sign them out so they don't stay logged in to an unauthorized session
-    const fb = window._fb;
-    if (fb) await fb.signOut(fb.auth);
-    return;
-  }
+  // We need the Firestore user list before we can check non-bootstrap users.
+  // Load state first; the role check happens against state.users.
   _currentUser = user;
-  // Show signed-in info in sidebar
+  // Show signed-in info in sidebar immediately
   const tag = document.getElementById('signedInAs');
   if (tag) tag.textContent = `Signed in as ${user.displayName || user.email}`;
-  // Show the app
+  // Show the app (hidden behind loading state)
   document.getElementById('gate').style.display = 'none';
   document.getElementById('app').style.display = 'grid';
   // Load data and start syncing
   await loadState();
+  // Now that state.users is loaded, check access
+  const role = getUserRole(user.email);
+  if (!role) {
+    // Not authorized — sign back out, restore gate
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('gate').style.display = 'flex';
+    showGateError(`${user.email} is not authorized to access this tracker. Ask the contractor to add you.`);
+    const fb = window._fb;
+    if (fb) await fb.signOut(fb.auth);
+    return;
+  }
+  _currentRole = role;
+  // Apply role-based visibility (hides admin-only nav items for non-admins)
+  applyRoleVisibility();
   setView('dashboard');
+}
+
+// Hide/show UI elements based on the current user's role.
+// Called after sign-in and any time the role might have changed.
+function applyRoleVisibility() {
+  const isAdmin = _currentRole === 'admin';
+  document.body.classList.toggle('role-admin', isAdmin);
+  document.body.classList.toggle('role-client', _currentRole === 'client');
+  document.body.classList.toggle('role-sub', _currentRole === 'sub');
+  // Show/hide admin-only nav items
+  document.querySelectorAll('[data-admin-only]').forEach(el => {
+    el.style.display = isAdmin ? '' : 'none';
+  });
 }
 
 function handleSignedOut() {
   _currentUser = null;
+  _currentRole = null;
+  document.body.classList.remove('role-admin', 'role-client', 'role-sub');
   if (_unsubscribe) { _unsubscribe(); _unsubscribe = null; }
   document.getElementById('app').style.display = 'none';
   document.getElementById('gate').style.display = 'flex';
